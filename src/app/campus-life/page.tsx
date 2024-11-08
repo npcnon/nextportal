@@ -4,7 +4,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Bell, Calendar, MapPin} from 'lucide-react';
 
-export const CampusView = () => {
+export default function CampusView() {
   // Dummy data
   const announcements = [
     {
@@ -148,5 +148,3 @@ export const CampusView = () => {
     </div>
   );
 };
-
-export default CampusView;

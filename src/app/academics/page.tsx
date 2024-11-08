@@ -2,9 +2,10 @@
 "use client"
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+
 import {  GraduationCap } from 'lucide-react';
 
-export const AcademicsView = () => {
+export default function AcademicsView() {
   // Dummy data
   const currentGrades = [
     { subject: 'Computer Programming II (Lec) - A', code: 'IT121', units: 3, grade: '1.25', term: 'Midterm' },
@@ -157,5 +158,3 @@ const InfoCard = ({ label, value }: { label: string; value: string }) => (
     <p className="font-medium text-lg">{value}</p>
   </div>
 );
-
-export default AcademicsView;

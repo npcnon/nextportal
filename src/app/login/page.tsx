@@ -51,7 +51,7 @@ export default function LoginPage() {
       setIsLoading(true)
       // Clear existing tokens before attempting login
       clearAuthTokens()
-      console.log(`identifier: ${values.identifier}, password: ${values.password}`)
+      console.log(`identifier: ${values.identifier}, password:${values.password}`)
       const response = await apiClient.post('/login', {
         identifier: values.identifier,
         password: values.password,
