@@ -36,7 +36,7 @@ export const StatusCards: React.FC = () => {
 
   useEffect(() => {
     fetchDocuments();
-  }, []);
+  }, [fetchDocuments]);
   //TODO: fix document auto load and fix refresh key auto load
   const submittedDocumentsCount = documents.length;
   const documentProgress = (submittedDocumentsCount / totalRequiredDocuments) * 100;
