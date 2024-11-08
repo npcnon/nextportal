@@ -10,7 +10,7 @@ import { useStudentProfileStore } from '@/lib/profile-store';
 import { useToast } from '@/hooks/use-toast';
 import apiClient from '@/lib/axios';
 
-export const StudentProfile = () => {
+export default function StudentProfile(){
 
     // In StudentProfile.tsx, add these at the top
 const [profilePicture, setProfilePicture] = useState<{
@@ -312,4 +312,3 @@ const EducationCard = ({
   </div>
 );
 
-export default StudentProfile;
