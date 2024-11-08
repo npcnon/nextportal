@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { Button } from '@/components/ui/button'
@@ -20,21 +20,25 @@ import {
 import { Loader2 } from 'lucide-react'
 
 // Mock data for programs and campuses
-const PROGRAMS = [
-  { id: 1, name: 'Bachelor of Science in Information Technology' },
-  { id: 2, name: 'Bachelor of Science in Computer Science' }
-]
 
 const CAMPUSES = [
-  { id: 1, name: 'Main Campus' },
-  { id: 2, name: 'North Campus' }
+  { id: 1, name: 'Mandaue Campus' },
+  { id: 2, name: 'Cebu Campus' }
 ]
-
+interface Program {
+  id: number
+  code: string
+  description: string
+  is_active: boolean
+  department_id: number
+}
 export default function EnrollmentForm() {
   const router = useRouter()
   const { toast } = useToast()
+  const [programs, setPrograms] = useState<Program[]>([])
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [formData, setFormData] = useState({
     first_name: '',
@@ -51,6 +55,28 @@ export default function EnrollmentForm() {
     sex: '',
     email: ''
   })
+  const handleNavigation = (path: string) => {
+    setIsNavigating(true)
+    router.push(path)
+  }
+
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        const response = await axios.get(`http://127.0.0.1:8000/api/program/?campus_id=${formData.campus}`)
+        setPrograms(response.data.results)
+      } catch (error) {
+        console.error('Failed to fetch programs:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load programs. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
+  
+    fetchPrograms()
+  }, [formData.campus]) // This will refetch programs when campus changes
 
   const yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year']
   const sexOptions = ['Male', 'Female']
@@ -74,7 +100,7 @@ export default function EnrollmentForm() {
           variant: "default",
           className: "bg-green-500 text-white",
         })
-        router.push('/login')
+        handleNavigation('/login') // Use handleNavigation instead of direct router.push
       }
     } catch (error) {
       console.error('Enrollment submission failed:', error)
@@ -106,7 +132,7 @@ export default function EnrollmentForm() {
             </div>
             <div>
               <p className="font-semibold">Program:</p>
-              <p>{PROGRAMS.find(p => p.id === Number(formData.program))?.name}</p>
+              <p>{programs.find(p => p.id === Number(formData.program))?.description}</p>
             </div>
           </div>
         </div>
@@ -286,15 +312,18 @@ export default function EnrollmentForm() {
         <div>
           <label className="block text-sm font-medium mb-2 text-gray-600">Program</label>
           <select
-            required
-            name="program"
-            value={formData.program}
-            onChange={handleChange}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-          >
-            {PROGRAMS.map(program => (
-              <option key={program.id} value={program.id}>{program.name}</option>
-            ))}
+              required
+              name="program"
+              value={formData.program}
+              onChange={handleChange}
+              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select Program</option>
+              {programs.map(program => (
+                <option key={program.id} value={program.id}>
+                  {program.description}
+                </option>
+              ))}
           </select>
         </div>
 
@@ -354,6 +383,14 @@ export default function EnrollmentForm() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12">
+
+      {isNavigating && (
+              <div className="fixed inset-0 z-50 bg-white/50 backdrop-blur-sm">
+                <div className="absolute top-0 left-0 w-full h-1">
+                  <div className="h-full bg-blue-600 animate-[loading_1s_ease-in-out_infinite]" />
+                </div>
+              </div>
+      )}
       <div className="container mx-auto px-4">
         <Card className="max-w-3xl mx-auto p-8 shadow-lg">
           <div className="mb-8 text-center">
@@ -376,6 +413,13 @@ export default function EnrollmentForm() {
         </Card>
       </div>
       <ConfirmationDialog />
+      <style jsx>{`
+        @keyframes loading {
+          0% { width: 0; }
+          50% { width: 70%; }
+          100% { width: 100%; }
+        }
+      `}</style>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 // components/dashboard/registration-button.tsx
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { FileEdit, AlertCircle, CheckCircle2, LucideIcon } from "lucide-react";
+import { FileEdit, AlertCircle, CheckCircle2, Loader, LucideIcon } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type RegistrationStatus = 'required' | 'incomplete' | 'complete' | 'pending';
+type RegistrationStatus = 'required' | 'incomplete' | 'complete' | 'pending' | 'loading';
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 interface StatusConfig {
@@ -25,11 +25,11 @@ interface StatusConfig {
 }
 
 interface RegistrationButtonProps {
-    status?: RegistrationStatus;
-    className?: string;
-    disabled?: boolean;
-    onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;  // Add this line
-  }
+  status?: RegistrationStatus;
+  className?: string;
+  disabled?: boolean;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+}
 const statusConfig: Record<RegistrationStatus, StatusConfig> = {
   required: {
     icon: AlertCircle,
@@ -65,47 +65,54 @@ const statusConfig: Record<RegistrationStatus, StatusConfig> = {
     badgeVariant: "outline",
     indicator: false,
   },
+  loading: {
+    icon: Loader,
+    text: "Registration Processing",
+    tooltip: "Your registration is being processed",
+    badgeText: "Loading",
+    badgeVariant: "outline",
+    indicator: false,
+  },
 };
 
 export const RegistrationButton: React.FC<RegistrationButtonProps> = ({
-    status = 'required',
-    className,
-    disabled,
-    onClick
-  }) => {
-    const config = statusConfig[status];
-    const Icon = config.icon;
-  
-    return (
-      <Button
-        size="lg"
-        variant={status === 'required' ? "default" : "secondary"}
+  status = 'required',
+  className,
+  disabled,
+  onClick,
+}) => {
+  const config = statusConfig[status];
+  const Icon = config.icon;
+
+  return (
+    <Button
+      size="lg"
+      variant={status === 'required' ? "default" : "secondary"}
+      className={cn(
+        "relative inline-flex items-center gap-2 pr-4",
+        "transition-all duration-200 ease-in-out",
+        className
+      )}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <Icon className="h-4 w-4 animate-spin" />
+      <span className="font-medium">{config.text}</span>
+      <Badge
+        variant={config.badgeVariant}
         className={cn(
-          "relative inline-flex items-center gap-2 pr-4",
-          "transition-all duration-200 ease-in-out",
-          
-          className
+          "ml-2 h-5",
+          config.badgeClassName
         )}
-        disabled={disabled}
-        onClick={onClick}
       >
-        <Icon className="h-4 w-4" />
-        <span className="font-medium">{config.text}</span>
-        <Badge 
-          variant={config.badgeVariant}
-          className={cn(
-            "ml-2 h-5",
-            config.badgeClassName
-          )}
-        >
-          {config.badgeText}
-        </Badge>
-        {config.indicator && (
-          <span className="absolute -top-1 -right-1 flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-          </span>
-        )}
-      </Button>
-    );
-  };
+        {config.badgeText}
+      </Badge>
+      {config.indicator && (
+        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+        </span>
+      )}
+    </Button>
+  );
+};

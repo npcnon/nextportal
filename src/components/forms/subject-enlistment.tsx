@@ -1,7 +1,7 @@
-// components/forms/subject-enlistment.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useToast } from '@/hooks/use-toast';
 import {
   Table,
   TableBody,
@@ -10,46 +10,137 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import axios from 'axios';
+import { useFullDataStore } from '@/lib/fulldata-store';
+import { useStudentProfileStore } from '@/lib/profile-store';
 
-const subjects = [
-  {
-    id: 1,
-    code: 'MATH101',
-    name: 'Mathematics 101',
-    units: 3,
-    schedule: 'MWF 9:00-10:30',
-    slots: 15,
-    status: 'available'
-  },
-  {
-    id: 2,
-    code: 'ENG101',
-    name: 'English Composition',
-    units: 3,
-    schedule: 'TTH 13:00-14:30',
-    slots: 3,
-    status: 'limited'
-  },
-  // Add more subjects as needed
-];
+interface Subject {
+  id: number;
+  name: string;
+  program: string | null;
+  semester: number;
+  employee: number;
+  subject: string;
+  schedule: string;
+  is_active: boolean;
+  is_deleted: boolean;
+  is_enrolled?: boolean; // Added this field
+}
 
 export const SubjectEnlistment = () => {
-  const getSlotStatusVariant = (slots: number) => {
-    if (slots > 5) return "default" // Green badge for plenty of slots
-    if (slots > 0) return "secondary" // Orange/gray badge for limited slots
-    return "destructive" // Red badge for no slots
-  }
+  const { toast } = useToast();
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loading, setLoading] = useState<{ [key: number]: boolean }>({});
+  const [enrolledSubjects, setEnrolledSubjects] = useState<number[]>([]);
 
-  const getSlotStatusText = (slots: number) => {
-    if (slots > 5) return `${slots} slots available`
-    if (slots > 0) return `${slots} slots left`
-    return "No slots available"
-  }
+  const { 
+    personal_data,
+    fetchStudentData 
+  } = useFullDataStore();
+  const profileData = useStudentProfileStore(state => state.profileData);
+
+  useEffect(() => {
+    fetchSubjects();
+    if (profileData?.profile?.student_info?.basicdata_applicant_id) {
+      fetchStudentData(profileData.profile.student_info.basicdata_applicant_id);
+      fetchEnrolledSubjects();
+    }
+  }, [profileData, fetchStudentData]);
+
+  const fetchEnrolledSubjects = async () => {
+    const studentId = personal_data[0]?.fulldata_applicant_id;
+    if (!studentId) return;
+
+    try {
+      const response = await axios.get(`http://127.0.0.1:8000/api/student-enlist/?filter=fulldata_applicant_id=${studentId}`);
+      const enrolledIds = response.data.map((subject: any) => subject.class_id);
+      setEnrolledSubjects(enrolledIds);
+    } catch (error) {
+      console.error('Failed to fetch enrolled subjects:', error);
+    }
+  };
+
+  const fetchSubjects = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/api/class-list/');
+      setSubjects(response.data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load subjects. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEnlistment = async (subjectId: number) => {
+    setLoading(prev => ({ ...prev, [subjectId]: true }));
+    const studentId = personal_data[0]?.fulldata_applicant_id;
+
+    try {
+      await axios.post('http://127.0.0.1:8000/api/student-enlist/', {
+        fulldata_applicant_id: studentId,
+        class_id: subjectId
+      });
+      
+      toast({
+        title: "Success",
+        description: "Successfully enlisted in the subject!",
+      });
+      
+      // Update the enrolled subjects list
+      setEnrolledSubjects(prev => [...prev, subjectId]);
+      fetchSubjects();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to enlist in the subject. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, [subjectId]: false }));
+    }
+  };
+
+  const getEnrollButtonState = (subject: Subject) => {
+    if (enrolledSubjects.includes(subject.id)) {
+      return {
+        text: "Enlisted",
+        disabled: true,
+        variant: "ghost" as const,
+        className: "bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700"
+
+      };
+    }
+
+    if (loading[subject.id]) {
+      return {
+        text: "Enlisting...",
+        disabled: true,
+        variant: "outline" as const,
+        className: ""
+      };
+    }
+
+    if (!subject.is_active) {
+      return {
+        text: "Enlist",
+        disabled: true,
+        variant: "outline" as const,
+        className: ""
+      };
+    }
+
+    return {
+      text: "Enlist",
+      disabled: false,
+      variant: "outline" as const,
+      className: ""
+    };
+  };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Available Subjects</CardTitle>
       </CardHeader>
@@ -57,37 +148,42 @@ export const SubjectEnlistment = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Subject Name</TableHead>
               <TableHead>Code</TableHead>
-              <TableHead>Subject</TableHead>
-              <TableHead>Units</TableHead>
               <TableHead>Schedule</TableHead>
-              <TableHead>Availability</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {subjects.map((subject) => (
-              <TableRow key={subject.id}>
-                <TableCell className="font-medium">{subject.code}</TableCell>
-                <TableCell>{subject.name}</TableCell>
-                <TableCell>{subject.units}</TableCell>
-                <TableCell>{subject.schedule}</TableCell>
-                <TableCell>
-                  <Badge variant={getSlotStatusVariant(subject.slots)}>
-                    {getSlotStatusText(subject.slots)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    disabled={subject.slots === 0}
-                  >
-                    Enlist
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {subjects.map((subject) => {
+              const buttonState = getEnrollButtonState(subject);
+              return (
+                <TableRow key={subject.id}>
+                  <TableCell className="font-medium">{subject.name}</TableCell>
+                  <TableCell>{subject.subject}</TableCell>
+                  <TableCell>{subject.schedule}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      subject.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {subject.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Button 
+                      variant={buttonState.variant}
+                      size="sm"
+                      onClick={() => handleEnlistment(subject.id)}
+                      disabled={buttonState.disabled}
+                      className={buttonState.className}
+                    >
+                      {buttonState.text}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>
@@ -95,15 +191,4 @@ export const SubjectEnlistment = () => {
   );
 };
 
-// If you want to customize the badge colors further, you can add these to your globals.css:
-/*
-@layer components {
-  .badge-success {
-    @apply bg-green-100 text-green-800 hover:bg-green-100/80;
-  }
-  
-  .badge-warning {
-    @apply bg-yellow-100 text-yellow-800 hover:bg-yellow-100/80;
-  }
-}
-*/
+export default SubjectEnlistment;

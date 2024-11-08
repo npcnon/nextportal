@@ -1,14 +1,59 @@
 // app/profile/page.tsx
 "use client"
 // components/student/ProfileView.tsx
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useFullDataStore } from '@/lib/fulldata-store';
 import { format } from 'date-fns';
 import { Loading } from '@/components/ui/loading';
 import { Mail, Phone, Map, User, Calendar, Book, School, Home } from 'lucide-react';
 import { useStudentProfileStore } from '@/lib/profile-store';
+import { useToast } from '@/hooks/use-toast';
+import apiClient from '@/lib/axios';
 
 export const StudentProfile = () => {
+
+    // In StudentProfile.tsx, add these at the top
+const [profilePicture, setProfilePicture] = useState<{
+  id: number;
+  type: string;
+  temporary_url?: string;
+} | null>(null);
+const [isLoadingPicture, setIsLoadingPicture] = useState(true);
+const { toast } = useToast();
+
+// Add this useEffect after your existing useEffect
+useEffect(() => {
+  const fetchProfilePicture = async () => {
+    try {
+      setIsLoadingPicture(true);
+      const response = await apiClient.get('/documents');
+      const profileDoc = response.data.documents.find(
+        (doc: any) => doc.document_type === 'Profile Picture'
+      );
+      
+      if (profileDoc?.temporary_url) {
+        setProfilePicture({
+          id: profileDoc.id,
+          type: 'Profile Picture',
+          temporary_url: profileDoc.temporary_url
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile picture:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile picture",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingPicture(false);
+    }
+  };
+  
+  fetchProfilePicture();
+  const interval = setInterval(fetchProfilePicture, 45 * 60 * 1000);
+  return () => clearInterval(interval);
+}, [toast]);
 
     const { 
       personal_data, 
@@ -99,19 +144,30 @@ export const StudentProfile = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-8 py-12">
-            <div className="flex items-center gap-6">
-              <div className="h-24 w-24 rounded-full bg-white flex items-center justify-center">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-8 py-12">
+          <div className="flex items-center gap-6">
+            <div className="h-24 w-24 rounded-full bg-white overflow-hidden flex items-center justify-center">
+              {isLoadingPicture ? (
+                <div className="w-24 h-24 bg-gray-200 animate-pulse" />
+              ) : profilePicture?.temporary_url ? (
+                <img
+                  src={profilePicture.temporary_url}
+                  alt="Profile"
+                  className="w-24 h-24 object-cover"
+                  onError={() => setProfilePicture(null)}
+                />
+              ) : (
                 <User className="h-12 w-12 text-blue-500" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-white">
-                  {student.f_name} {student.m_name} {student.l_name} {student.suffix}
-                </h1>
-                <p className="text-blue-100 mt-1">Student ID: {student.fulldata_applicant_id}</p>
-              </div>
+              )}
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">
+                {student.f_name} {student.m_name} {student.l_name} {student.suffix}
+              </h1>
+              <p className="text-blue-100 mt-1">Student ID: {student.fulldata_applicant_id}</p>
             </div>
           </div>
+        </div>
           
           <div className="px-8 py-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

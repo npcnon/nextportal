@@ -51,7 +51,7 @@ export default function LoginPage() {
       setIsLoading(true)
       // Clear existing tokens before attempting login
       clearAuthTokens()
-
+      console.log(`identifier: ${values.identifier}, password: ${values.password}`)
       const response = await apiClient.post('/login', {
         identifier: values.identifier,
         password: values.password,
@@ -184,15 +184,15 @@ export default function LoginPage() {
             Forgot password?
           </Link>
           <Link
-            href="/signup"
+            href="/enrollment"
             className="text-orange-600 hover:underline"
             onClick={(e) => {
               e.preventDefault();
               setIsNavigating(true);
-              router.push('/signup');
+              router.push('/enrollment');
             }}
           >
-            Don't have an account?
+            Don't have an account? Enroll Now!
           </Link>
         </div>
 

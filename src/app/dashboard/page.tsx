@@ -1,13 +1,13 @@
 // app/(dashboard)/page.tsx
 "use client"
 
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { DashboardHeader } from '@/components/layout/dashboard-header';
 import { StatusCards } from '@/components/dashboard/status-cards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SubjectEnlistment } from '@/components/forms/subject-enlistment';
+import DocumentUploadManager from '@/components/files/DocumentSubmission';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -20,6 +20,8 @@ import {
 import StudentRegistrationForm from '@/components/forms/student-registration';
 import { RegistrationButton } from '@/components/dashboard/registration-button';
 import { useFullDataStore } from '@/lib/fulldata-store';
+import { useStudentProfileStore } from '@/lib/profile-store';
+import RegistrationRequiredNotice from '@/components/dashboard/registration-notice';
 
 interface StudentRegistrationDialogProps {
     trigger: React.ReactNode;
@@ -38,7 +40,7 @@ const StudentRegistrationDialog: React.FC<StudentRegistrationDialogProps> = ({ t
       </DialogTrigger>
       <DialogContent className="max-w-5xl h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Student Registration</DialogTitle>
+          <DialogTitle>Student Information</DialogTitle>
           <DialogDescription>
             Please fill out all required information in the registration form below.
           </DialogDescription>
@@ -59,19 +61,40 @@ const TabContent: React.FC<TabContentProps> = ({ children, className }) => (
 
 
 export default function StudentDashboard(): React.JSX.Element {
-    const personal_data= useFullDataStore(state => state.personal_data)
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const { 
+    personal_data,
+    fetchStudentData 
+  } = useFullDataStore();
+  const profileData = useStudentProfileStore(state => state.profileData);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (profileData?.profile?.student_info?.basicdata_applicant_id) {
+        await fetchStudentData(profileData.profile.student_info.basicdata_applicant_id);
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [profileData, fetchStudentData]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-900">Student Dashboard</h1>
-          {personal_data.length === 0 ? (
+          {isLoading ? (
             <StudentRegistrationDialog 
-              trigger={<RegistrationButton status="required" />}
+              trigger={<RegistrationButton status="loading" />}
             />
           ) : (
             <StudentRegistrationDialog 
-              trigger={<RegistrationButton status="complete" disabled/>}
+              trigger={personal_data.length === 0 ? (
+                <RegistrationButton status="required" />
+              ) : (
+                <RegistrationButton status="complete" disabled />
+              )}
             />
           )}
         </div>
@@ -92,13 +115,13 @@ export default function StudentDashboard(): React.JSX.Element {
 
             <div className="p-4">
               <TabsContent value="enlistment">
-                <SubjectEnlistment />
+              {personal_data.length? <SubjectEnlistment /> : <RegistrationRequiredNotice />}
               </TabsContent>
 
               <TabsContent value="requirements">
-                <TabContent>
-                  Requirements section coming soon
-                </TabContent>
+                <div className="space-y-6">
+                {personal_data.length? <DocumentUploadManager/> : <RegistrationRequiredNotice />}
+                </div>
               </TabsContent>
 
               <TabsContent value="payment">
