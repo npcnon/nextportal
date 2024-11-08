@@ -2,8 +2,6 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { DashboardHeader } from '@/components/layout/dashboard-header';
 import { StatusCards } from '@/components/dashboard/status-cards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SubjectEnlistment } from '@/components/forms/subject-enlistment';

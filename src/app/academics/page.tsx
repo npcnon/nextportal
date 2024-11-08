@@ -2,8 +2,7 @@
 "use client"
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { format } from 'date-fns';
-import { Book, Calendar, GraduationCap } from 'lucide-react';
+import {  GraduationCap } from 'lucide-react';
 
 export const AcademicsView = () => {
   // Dummy data

@@ -2,7 +2,7 @@
 "use client"
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Bell, Calendar, MapPin, MessageCircle } from 'lucide-react';
+import { Bell, Calendar, MapPin} from 'lucide-react';
 
 export const CampusView = () => {
   // Dummy data
