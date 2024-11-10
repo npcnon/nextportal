@@ -113,12 +113,14 @@ export default function StudentDashboard(): React.JSX.Element {
 
             <div className="p-4">
               <TabsContent value="enlistment">
-              {personal_data.length? <SubjectEnlistment /> : <RegistrationRequiredNotice />}
+              <SubjectEnlistment />
+              {/* {personal_data.length? <SubjectEnlistment /> : <RegistrationRequiredNotice />} */}
               </TabsContent>
 
               <TabsContent value="requirements">
                 <div className="space-y-6">
-                {personal_data.length? <DocumentUploadManager/> : <RegistrationRequiredNotice />}
+                <DocumentUploadManager/>
+                {/* {personal_data.length? <DocumentUploadManager/> : <RegistrationRequiredNotice />} */}
                 </div>
               </TabsContent>
 

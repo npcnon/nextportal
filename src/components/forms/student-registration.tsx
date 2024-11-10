@@ -327,8 +327,8 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
     setIsLoading(true);
     try {
       const [programsResponse, semestersResponse] = await Promise.all([
-        axios.get(`http://127.0.0.1:8000/api/program/?campus_id=${campus}`),
-        axios.get(`http://127.0.0.1:8000/api/semester/?campus_id=${campus}`)
+        axios.get(`https://afknon.pythonanywhere.com/api/program/?campus_id=${campus}`),
+        axios.get(`https://afknon.pythonanywhere.com/api/semester/?campus_id=${campus}`)
       ]);
 
       setPrograms(programsResponse.data.results);
@@ -1833,7 +1833,7 @@ const StudentRegistrationForm: React.FC = () => {
     try {
       console.log("Form values:", data);
       
-      const response = await axios.post('http://127.0.0.1:8000/api/full-student-data/', data);
+      const response = await axios.post('https://afknon.pythonanywhere.com/api/full-student-data/', data);
       
       toast({
         title: "Success!",
