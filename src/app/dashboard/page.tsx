@@ -20,6 +20,7 @@ import { RegistrationButton } from '@/components/dashboard/registration-button';
 import { useFullDataStore } from '@/lib/fulldata-store';
 import { useStudentProfileStore } from '@/lib/profile-store';
 import RegistrationRequiredNotice from '@/components/dashboard/registration-notice';
+import InDevelopmentNotice from '@/components/dashboard/indevelop-notice';
 
 interface StudentRegistrationDialogProps {
     trigger: React.ReactNode;
@@ -44,7 +45,8 @@ const StudentRegistrationDialog: React.FC<StudentRegistrationDialogProps> = ({ t
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
-          <StudentRegistrationForm />
+        <InDevelopmentNotice/>
+          {/* <StudentRegistrationForm /> */}
         </div>
       </DialogContent>
     </Dialog>
@@ -113,13 +115,13 @@ export default function StudentDashboard(): React.JSX.Element {
 
             <div className="p-4">
               <TabsContent value="enlistment">
-              <SubjectEnlistment />
+              <InDevelopmentNotice/>
               {/* {personal_data.length? <SubjectEnlistment /> : <RegistrationRequiredNotice />} */}
               </TabsContent>
 
               <TabsContent value="requirements">
                 <div className="space-y-6">
-                <DocumentUploadManager/>
+                <InDevelopmentNotice/>
                 {/* {personal_data.length? <DocumentUploadManager/> : <RegistrationRequiredNotice />} */}
                 </div>
               </TabsContent>
