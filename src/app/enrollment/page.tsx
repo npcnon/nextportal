@@ -18,6 +18,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Loader2 } from 'lucide-react'
+import { z } from 'zod'
+import { Textarea } from '@/components/ui/textarea'
 
 // Mock data for programs and campuses
 
@@ -32,6 +34,45 @@ interface Program {
   is_active: boolean
   department_id: number
 }
+
+const enrollmentSchema = z.object({
+  first_name: z.string()
+    .min(2, 'First name must be at least 2 characters')
+    .max(50, 'First name cannot exceed 50 characters'),
+  middle_name: z.string()
+    .max(50, 'Middle name cannot exceed 50 characters')
+    .optional(),
+  last_name: z.string()
+    .min(2, 'Last name must be at least 2 characters')
+    .max(50, 'Last name cannot exceed 50 characters'),
+  suffix: z.string()
+    .max(10, 'Suffix cannot exceed 10 characters')
+    .optional(),
+  birth_date: z.string().min(1, "Birth date is required"),
+  sex: z.enum(['Male', 'Female'], {
+    errorMap: () => ({ message: 'Please select a valid sex' })
+  }),
+  email: z.string()
+    .email('Please enter a valid email address')
+    .min(1, 'Email is required'),
+  contact_number: z.string()
+    .regex(/^09\d{9}$/, 'Contact number must start with 09 and have 11 digits'),
+  address: z.string()
+    .min(10, 'Address must be at least 10 characters')
+    .max(255, 'Address cannot exceed 255 characters'),
+  campus: z.string()
+    .min(1, 'Please select a campus'),
+  program: z.string()
+    .min(1, 'Please select a program'),
+  year_level: z.string()
+    .min(1, 'Please select a year level'),
+  is_transferee: z.boolean()
+})
+
+type EnrollmentSchema = z.infer<typeof enrollmentSchema>
+
+
+
 export default function EnrollmentForm() {
   const router = useRouter()
   const { toast } = useToast()
@@ -40,6 +81,25 @@ export default function EnrollmentForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [errors, setErrors] = useState<Partial<Record<keyof EnrollmentSchema, string>>>({})
+  const validateForm = () => {
+    try {
+      enrollmentSchema.parse(formData)
+      setErrors({})
+      return true
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const formattedErrors: Partial<Record<keyof EnrollmentSchema, string>> = {}
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            formattedErrors[err.path[0] as keyof EnrollmentSchema] = err.message
+          }
+        })
+        setErrors(formattedErrors)
+      }
+      return false
+    }
+  }
   const [formData, setFormData] = useState({
     first_name: '',
     middle_name: '',
@@ -81,8 +141,15 @@ export default function EnrollmentForm() {
   const yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year']
   const sexOptions = ['Male', 'Female']
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
+  
+    // Clear any existing errors for this field
+    setErrors(prev => ({
+      ...prev,
+      [name]: undefined
+    }))
+  
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
@@ -90,29 +157,74 @@ export default function EnrollmentForm() {
   }
 
   const handleSubmit = async () => {
-    setIsLoading(true)
-    try {
-      const response = await axios.post('http://127.0.0.1:8000/api/stdntbasicinfo/', formData)
-      if (response.status === 201) {
-        toast({
-          title: "Success!",
-          description: "Your enrollment has been submitted successfully. Please Check your email",
-          variant: "default",
-          className: "bg-green-500 text-white",
-        })
-        handleNavigation('/login') // Use handleNavigation instead of direct router.push
-      }
-    } catch (error) {
-      console.error('Enrollment submission failed:', error)
+
+try{
+  enrollmentSchema.parse(formData)
+  setErrors({})
+  
+  setIsLoading(true)
+
+  try {
+
+    const response = await axios.post('http://127.0.0.1:8000/api/stdntbasicinfo/', formData)
+    if (response.status === 201) {
       toast({
-        title: "Error",
-        description: "Failed to submit enrollment. Please try again.",
-        variant: "destructive",
+        title: "Success!",
+        description: "Your enrollment has been submitted successfully. Please Check your email",
+        variant: "default",
+        className: "bg-green-500 text-white",
       })
-    } finally {
-      setIsLoading(false)
-      setShowConfirmDialog(false)
+      handleNavigation('/login') // Use handleNavigation instead of direct router.push
     }
+  } catch (error) {
+    console.error('Enrollment submission failed:', error)
+    toast({
+      title: "Error",
+      description: "Failed to submit enrollment. Please try again.",
+      variant: "destructive",
+    })
+  } finally {
+    setIsLoading(false)
+    setShowConfirmDialog(false)
+  }
+}catch (error) {
+  if (error instanceof z.ZodError) {
+    const formattedErrors: Partial<Record<keyof EnrollmentSchema, string>> = {}
+    const errorMessages: string[] = []
+    
+    error.errors.forEach((err) => {
+      if (err.path[0]) {
+        // Format the field name to be more readable
+        const fieldName = err.path[0].toString()
+          .replace(/_/g, ' ')
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
+        
+        formattedErrors[err.path[0] as keyof EnrollmentSchema] = err.message
+        errorMessages.push(`${fieldName}: ${err.message}`)
+      }
+    })
+    
+    setErrors(formattedErrors)
+    
+    // Show toast with specific error messages
+    toast({
+      title: "Please fix the following errors:",
+      description: (
+        <ul className="list-disc pl-4 mt-2 space-y-1">
+          {errorMessages.map((message, index) => (
+            <li key={index}>{message}</li>
+          ))}
+        </ul>
+      ),
+      variant: "destructive",
+      duration: 5000, // Show for longer since there might be multiple errors
+    })
+  }
+  return
+}
+
   }
 
   const ConfirmationDialog = () => (
@@ -174,20 +286,31 @@ export default function EnrollmentForm() {
             name="first_name"
             value={formData.first_name}
             onChange={handleChange}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+              errors.first_name ? 'border-red-500' : ''
+            }`}
             placeholder="Enter your first name"
           />
+          {errors.first_name && (
+            <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-2 text-gray-600">Middle Name</label>
           <Input
+            required
             name="middle_name"
             value={formData.middle_name}
             onChange={handleChange}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your middle name (optional)"
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+              errors.middle_name ? 'border-red-500' : ''
+            }`}
+            placeholder="Enter your middle name"
           />
+          {errors.middle_name && (
+            <p className="text-red-500 text-sm mt-1">{errors.middle_name}</p>
+          )}
         </div>
 
         <div>
@@ -197,32 +320,50 @@ export default function EnrollmentForm() {
             name="last_name"
             value={formData.last_name}
             onChange={handleChange}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+              errors.last_name ? 'border-red-500' : ''
+            }`}
             placeholder="Enter your last name"
           />
+          {errors.last_name && (
+            <p className="text-red-500 text-sm mt-1">{errors.last_name}</p>
+          )}
+          
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-2 text-gray-600">Suffix</label>
           <Input
+            required
             name="suffix"
             value={formData.suffix}
             onChange={handleChange}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-            placeholder="Jr., Sr., III, etc. (optional)"
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+              errors.suffix ? 'border-red-500' : ''
+            }`}
+            placeholder="Enter your suffix"
           />
+          {errors.suffix && (
+            <p className="text-red-500 text-sm mt-1">{errors.suffix}</p>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-2 text-gray-600">Birth Date</label>
           <Input
             required
-            type="date"
             name="birth_date"
+            type="date"
             value={formData.birth_date}
             onChange={handleChange}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+              errors.birth_date ? 'border-red-500' : ''
+            }`}
+            placeholder="Enter your birth date"
           />
+          {errors.birth_date && (
+            <p className="text-red-500 text-sm mt-1">{errors.birth_date}</p>
+          )}
         </div>
 
         <div>
@@ -232,13 +373,19 @@ export default function EnrollmentForm() {
             name="sex"
             value={formData.sex}
             onChange={handleChange}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+              errors.sex ? 'border-red-500' : ''
+            }`}
           >
             <option value="">Select Sex</option>
             {sexOptions.map(option => (
               <option key={option} value={option}>{option}</option>
             ))}
           </select>
+          {errors.sex && (
+            <p className="text-red-500 text-sm mt-1">{errors.sex}</p>
+          )}
+          
         </div>
       </div>
       <Button
@@ -259,13 +406,17 @@ export default function EnrollmentForm() {
           <label className="block text-sm font-medium mb-2 text-gray-600">Email</label>
           <Input
             required
-            type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-            placeholder="your.email@example.com"
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+              errors.email ? 'border-red-500' : ''
+            }`}
+            placeholder="Enter your email"
           />
+          {errors.email && (
+            <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+          )}
         </div>
 
         <div>
@@ -275,10 +426,14 @@ export default function EnrollmentForm() {
             name="contact_number"
             value={formData.contact_number}
             onChange={handleChange}
-            maxLength={11}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-            placeholder="09XXXXXXXXX"
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+              errors.contact_number ? 'border-red-500' : ''
+            }`}
+            placeholder="Enter your contact number"
           />
+          {errors.contact_number && (
+            <p className="text-red-500 text-sm mt-1">{errors.contact_number}</p>
+          )}
         </div>
 
         <div className="md:col-span-2">
@@ -287,60 +442,89 @@ export default function EnrollmentForm() {
             required
             name="address"
             value={formData.address}
-            onChange={handleChange as any}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+            onChange={handleChange}
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+              errors.address ? 'border-red-500' : ''
+            }`}
             rows={3}
             placeholder="Enter your complete address"
+            maxLength={255}
           />
+          {errors.address && (
+            <p className="text-red-500 text-sm mt-1">{errors.address}</p>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-2 text-gray-600">Campus</label>
+          
           <select
             required
             name="campus"
             value={formData.campus}
             onChange={handleChange}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+              errors.campus ? 'border-red-500' : ''
+            }`}
           >
+            <option value="">Select Campus</option>
             {CAMPUSES.map(campus => (
               <option key={campus.id} value={campus.id}>{campus.name}</option>
             ))}
           </select>
+          {errors.campus && (
+            <p className="text-red-500 text-sm mt-1">{errors.campus}</p>
+          )}
+
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-2 text-gray-600">Program</label>
+          
           <select
-              required
-              name="program"
-              value={formData.program}
-              onChange={handleChange}
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select Program</option>
-              {programs.map(program => (
+            required
+            name="program"
+            value={formData.program}
+            onChange={handleChange}
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+              errors.program ? 'border-red-500' : ''
+            }`}
+          >
+            <option value="">Select Program</option>
+            {programs.map(program => (
                 <option key={program.id} value={program.id}>
                   {program.description}
                 </option>
               ))}
           </select>
+          {errors.program && (
+            <p className="text-red-500 text-sm mt-1">{errors.program}</p>
+          )}
+
+          
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-2 text-gray-600">Year Level</label>
+          
           <select
             required
             name="year_level"
             value={formData.year_level}
             onChange={handleChange}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+              errors.year_level ? 'border-red-500' : ''
+            }`}
           >
             <option value="">Select Year Level</option>
             {yearLevels.map(year => (
               <option key={year} value={year}>{year}</option>
             ))}
           </select>
+          {errors.year_level && (
+            <p className="text-red-500 text-sm mt-1">{errors.year_level}</p>
+          )}
+
         </div>
 
         <div className="flex items-center">
@@ -352,6 +536,9 @@ export default function EnrollmentForm() {
             className="mr-2 h-4 w-4 text-blue-600"
           />
           <label className="text-sm text-gray-600">I am a transferee student</label>
+          {errors.is_transferee && (
+            <p className="text-red-500 text-sm mt-1">{errors.is_transferee}</p>
+          )}
         </div>
       </div>
 

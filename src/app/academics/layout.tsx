@@ -1,9 +1,9 @@
-// app/(chats)/layout.tsx
+// app/(academics)/layout.tsx
 import { DashboardHeader } from '@/components/layout/dashboard-header';
 import { Providers } from "@/components/providers/providers"
 
 
-export default function ChatsLayout({
+export default function AcademicsLayout({
   children,
 }: {
   children: React.ReactNode
