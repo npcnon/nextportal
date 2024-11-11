@@ -32,9 +32,9 @@ export default function LandingPage() {
           backgroundImage: `
             linear-gradient(
               150deg,
-              rgba(30, 58, 138, 0.98) 0%,   /* Darker blue */
-              rgba(29, 78, 216, 0.85) 50%,  /* Royal blue */
-              rgba(59, 130, 246, 0.65) 100% /* Brighter blue */
+              rgba(17, 24, 39, 0.98) 0%,    /* Darkest blue (almost black-blue) */
+              rgba(30, 58, 138, 0.90) 50%,   /* Very dark blue */
+              rgba(29, 78, 216, 0.75) 100%   /* Dark royal blue */
             ),
             url('/img/image.png')
           `

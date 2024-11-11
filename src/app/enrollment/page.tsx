@@ -123,7 +123,7 @@ export default function EnrollmentForm() {
   useEffect(() => {
     const fetchPrograms = async () => {
       try {
-        const response = await axios.get(`https://afknon.pythonanywhere.com/api/program/?campus_id=${formData.campus}`)
+        const response = await axios.get(`http://127.0.0.1:8000/api/program/?campus_id=${formData.campus}`)
         setPrograms(response.data.results)
       } catch (error) {
         console.error('Failed to fetch programs:', error)
@@ -166,7 +166,7 @@ try{
 
   try {
 
-    const response = await axios.post('https://afknon.pythonanywhere.com/api/stdntbasicinfo/', formData)
+    const response = await axios.post('http://127.0.0.1:8000/api/stdntbasicinfo/', formData)
     if (response.status === 201) {
       toast({
         title: "Success!",
@@ -461,7 +461,7 @@ try{
           <select
             required
             name="campus"
-            value={formData.campus}
+            value={undefined}
             onChange={handleChange}
             className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
               errors.campus ? 'border-red-500' : ''
@@ -484,7 +484,7 @@ try{
           <select
             required
             name="program"
-            value={formData.program}
+            value={undefined}
             onChange={handleChange}
             className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
               errors.program ? 'border-red-500' : ''
@@ -569,8 +569,7 @@ try{
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12">
-
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 py-12">
       {isNavigating && (
               <div className="fixed inset-0 z-50 bg-white/50 backdrop-blur-sm">
                 <div className="absolute top-0 left-0 w-full h-1">
@@ -581,7 +580,12 @@ try{
       <div className="container mx-auto px-4">
         <Card className="max-w-3xl mx-auto p-8 shadow-lg">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-gray-800">Student Enrollment Form</h1>
+            <img 
+                src="/img/circlelogomod.png" 
+                alt="Benedicto College Logo" 
+                className="w-20 h-20 object-contain rounded-full mx-auto mb-4" 
+              />
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Student Enrollment Form</h1>
             <p className="text-gray-600 mt-2">Please fill out all required fields to complete your enrollment</p>
           </div>
 

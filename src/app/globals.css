@@ -34,6 +34,11 @@ body {
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+  .border-red-500:focus {
+    --tw-ring-color: rgb(239 68 68) !important;
+    --tw-border-opacity: 1 !important;
+    border-color: rgb(239 68 68) !important;
+  }
   .dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;

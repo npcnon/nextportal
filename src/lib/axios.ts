@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://afknon.pythonanywhere.com/api/'
+const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/'
 
 const apiClient = axios.create({
   baseURL,

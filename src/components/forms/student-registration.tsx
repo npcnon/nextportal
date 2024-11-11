@@ -12,14 +12,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { UserCircle, Home, Users, GraduationCap, School } from "lucide-react";
+import { UserCircle, Home, Users, GraduationCap, School, AlertCircle } from "lucide-react";
 import { useStudentProfileStore } from '@/lib/profile-store';
 import { useToast } from '@/hooks/use-toast'
-
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { z } from "zod";
 import { Controller, FormProvider, useForm, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RequiredFormField } from './required-input';
+import useDebounce from '@/hooks/use-debounce';
 
 interface Program {
   id: number
@@ -164,7 +171,10 @@ const optionalPhoneSchema = z.union([
 const personalDataSchema = z.object({
   basicdata_applicant_id: z.number(),
   f_name: nameSchema,
-  m_name: nameSchema.optional(),
+  m_name: z.string()
+  .max(100, "Name must not exceed 100 characters")
+  .optional()
+  .nullable(),
   suffix: z.string().max(100).optional(),
   l_name: nameSchema,
   sex: z.string().min(1, "Sex field is required"),
@@ -324,11 +334,12 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
   const { toast } = useToast();
 
   const fetchAcademicData = async (campus: number) => {
+
     setIsLoading(true);
     try {
       const [programsResponse, semestersResponse] = await Promise.all([
-        axios.get(`https://afknon.pythonanywhere.com/api/program/?campus_id=${campus}`),
-        axios.get(`https://afknon.pythonanywhere.com/api/semester/?campus_id=${campus}`)
+        axios.get(`http://127.0.0.1:8000/api/program/?campus_id=${campus}`),
+        axios.get(`http://127.0.0.1:8000/api/semester/?campus_id=${campus}`)
       ]);
 
       setPrograms(programsResponse.data.results);
@@ -359,11 +370,9 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
 
 const PersonalInfoForm: React.FC<InfoFormProps> = ({ formData, setFormData }) => {
   const profileData = useStudentProfileStore(state => state.profileData);
-  const { register, formState: { errors }, setValue, control } = useFormContext<StudentFormData>();
+  const { register, formState: { errors }, control } = useFormContext<StudentFormData>();
 
-
-
-  const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -372,8 +381,8 @@ const PersonalInfoForm: React.FC<InfoFormProps> = ({ formData, setFormData }) =>
         [name]: value
       }
     }));
-    console.log(` basicdataid: ${profileData.profile.student_info.basicdata_applicant_id}`)
-  };  
+  };
+
   return (
     <Card className="border-0 shadow-none">
       <CardHeader>
@@ -382,216 +391,124 @@ const PersonalInfoForm: React.FC<InfoFormProps> = ({ formData, setFormData }) =>
           Personal Information
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Required Fields */}
+          <RequiredFormField
+            type="input"
+            name="personal_data.f_name"
+            label="First Name"
+            placeholder="Enter first name"
+            defaultValue={formData.personal_data.f_name}
+            onChange={handleFieldChange}
+          />
+
           <div className="space-y-2">
-            <Label htmlFor="f_name">First Name*</Label>
-            <Input 
-              id="f_name"
-              {...register("personal_data.f_name", {
-                onChange: handleFieldChange
-              })}
-              defaultValue={formData.personal_data.f_name}
-              className={errors.personal_data?.f_name ? "border-red-500" : ""}
-              placeholder="Enter first name"
-            />
-            {errors.personal_data?.f_name && (
-              <span className="text-sm text-red-500">{errors.personal_data?.f_name.message}</span>
-            )}          
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="m_name">Middle Name</Label>
+            <Label htmlFor="m_name">Middle Name (Optional)</Label>
             <Input 
               id="m_name"
               {...register("personal_data.m_name", {
                 onChange: handleFieldChange
               })}
               defaultValue={formData.personal_data.m_name}
-              className={errors.personal_data?.m_name ? "border-red-500" : ""}
               placeholder="Enter middle name"
             />
-            {errors.personal_data?.m_name && (
-              <span className="text-sm text-red-500">{errors.personal_data?.message}</span>
-            )}   
           </div>
+
+          <RequiredFormField
+            type="input"
+            name="personal_data.l_name"
+            label="Last Name"
+            placeholder="Enter last name"
+            defaultValue={formData.personal_data.l_name}
+            onChange={handleFieldChange}
+          />
+
           <div className="space-y-2">
-            <Label htmlFor="l_name">Last Name*</Label>
-            <Input 
-              id="l_name"
-              {...register("personal_data.l_name", {
-                onChange: handleFieldChange
-              })}
-              defaultValue={formData.personal_data.l_name}
-              className={errors.personal_data?.l_name ? "border-red-500" : ""}
-              placeholder="Enter last name"
-            />
-            {errors.personal_data?.l_name && (
-              <span className="text-sm text-red-500">{errors.personal_data?.l_name.message}</span>
-            )}   
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="suffix">Suffix</Label>
+            <Label htmlFor="suffix">Suffix (Optional)</Label>
             <Input 
               id="suffix"
               {...register("personal_data.suffix", {
                 onChange: handleFieldChange
               })}
               defaultValue={formData.personal_data.suffix}
-              className={errors.personal_data?.suffix ? "border-red-500" : ""}
               placeholder="Enter suffix"
             />
-            {errors.personal_data?.suffix && (
-              <span className="text-sm text-red-500">{errors.personal_data?.suffix.message}</span>
-            )}   
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="sex">Sex*</Label>
-            <Controller
+            <RequiredFormField
+              type="select"
               name="personal_data.sex"
+              label="Sex"
               control={control}
-              defaultValue={profileData.profile.student_info.sex}
-              render={({ field }) => (
-                <Select
-                  value={field.value} // Use value instead of defaultValue
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    // Update formData when select value changes
-                    setFormData(prev => ({
-                      ...prev,
-                      personal_data: {
-                        ...prev.personal_data,
-                        sex: value
-                      }
-                    }));
-                  }}
-                >
-                  <SelectTrigger className={errors.personal_data?.sex ? "border-red-500" : ""}>
-                    <SelectValue placeholder="Select sex" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Male">Male</SelectItem>
-                    <SelectItem value="Female">Female</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+              options={[
+                { value: 'Male', label: 'Male' },
+                { value: 'Female', label: 'Female' }
+              ]}
+              defaultValue={formData.personal_data.sex}
             />
-            {errors.personal_data?.sex && (
-              <span className="text-sm text-red-500">{errors.personal_data?.sex.message}</span>
-            )}
           </div>
+
+          <RequiredFormField
+            type="date"
+            name="personal_data.birth_date"
+            label="Birth Date"
+            defaultValue={formData.personal_data.birth_date}
+            onChange={handleFieldChange}
+          />
+
+          <RequiredFormField
+            type="input"
+            name="personal_data.birth_place"
+            label="Birth Place"
+            placeholder="Enter birth place"
+            defaultValue={formData.personal_data.birth_place}
+            onChange={handleFieldChange}
+          />
+
+          <RequiredFormField
+            type="select"
+            name="personal_data.marital_status"
+            label="Marital Status"
+            control={control}
+            options={[
+              { value: 'Single', label: 'Single' },
+              { value: 'Married', label: 'Married' },
+              { value: 'Divorced', label: 'Divorced' },
+              { value: 'Widowed', label: 'Widowed' }
+            ]}
+            defaultValue={formData.personal_data.marital_status}
+          />
+
+          <RequiredFormField
+            type="input"
+            name="personal_data.religion"
+            label="Religion"
+            placeholder="Enter religion"
+            defaultValue={formData.personal_data.religion}
+            onChange={handleFieldChange}
+          />
+
+          <RequiredFormField
+            type="input"
+            name="personal_data.country"
+            label="Country"
+            placeholder="Enter country"
+            defaultValue={formData.personal_data.country}
+            onChange={handleFieldChange}
+          />
+
           <div className="space-y-2">
-            <Label htmlFor="birth_date">Birth Date*</Label>
-            <Input 
-              id="birth_date"
-              type="date"
-              {...register("personal_data.birth_date", {
-                onChange: handleFieldChange
-              })}
-              defaultValue={formData.personal_data.birth_date}
-              className={errors.personal_data?.birth_date ? "border-red-500" : ""}
-              placeholder="Input/Select birth data"
-            />
-            {errors.personal_data?.birth_date && (
-              <span className="text-sm text-red-500">{errors.personal_data?.birth_date.message}</span>
-            )}  
-          </div>          
-          <div className="space-y-2">
-            <Label htmlFor="birth_place">Birth Place*</Label>
-            <Input 
-              id="birth_place"
-              {...register("personal_data.birth_place", {
-                onChange: handleFieldChange
-              })}
-              defaultValue={formData.personal_data.birth_place}
-              className={errors.personal_data?.birth_place ? "border-red-500" : ""}
-              placeholder="Enter birth place"
-            />
-            {errors.personal_data?.birth_place && (
-              <span className="text-sm text-red-500">{errors.personal_data?.birth_place.message}</span>
-            )}  
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="marital_status">Marital Status*</Label>
-            <Controller
-              name="personal_data.marital_status"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    // Update formData when select value changes
-                    setFormData(prev => ({
-                      ...prev,
-                      personal_data: {
-                        ...prev.personal_data,
-                        marital_status: value
-                      }
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select marital status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Single">Single</SelectItem>
-                    <SelectItem value="Married">Married</SelectItem>
-                    <SelectItem value="Divorced">Divorced</SelectItem>
-                    <SelectItem value="Widowed">Widowed</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.personal_data?.marital_status && (
-              <span className="text-sm text-red-500">{errors.personal_data?.marital_status.message}</span>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="religion">Religion*</Label>
-            <Input 
-              id="religion"
-              {...register("personal_data.religion", {
-                onChange: handleFieldChange
-              })}
-              defaultValue={formData.personal_data.religion}
-              className={errors.personal_data?.religion ? "border-red-500" : ""}
-              placeholder="Enter Religion"
-            />
-            {errors.personal_data?.religion && (
-              <span className="text-sm text-red-500">{errors.personal_data?.religion.message}</span>
-            )}  
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="country">Country*</Label>
-            <Input 
-              id="country"
-              {...register("personal_data.country", {
-                onChange: handleFieldChange
-              })}
-              defaultValue={formData.personal_data.country}
-              className={errors.personal_data?.country ? "border-red-500" : ""}
-              placeholder="Enter Country"
-            />
-            {errors.personal_data?.country && (
-              <span className="text-sm text-red-500">{errors.personal_data?.country.message}</span>
-            )}  
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email*</Label>
+            <Label htmlFor="email">Email (Read Only)</Label>
             <Input 
               id="email"
               type="email"
               readOnly
-              {...register("personal_data.email", {
-                onChange: handleFieldChange
-              })}
               defaultValue={formData.personal_data.email}
+              className="bg-gray-50"
               placeholder="Email is empty"
             />
-            {errors.personal_data?.email && (
-              <span className="text-sm text-red-500">{errors.personal_data?.email.message}</span>
-            )}  
           </div>
         </div>
       </CardContent>
@@ -599,33 +516,13 @@ const PersonalInfoForm: React.FC<InfoFormProps> = ({ formData, setFormData }) =>
   );
 };
 
+
 const ContactInfoForm: React.FC<InfoFormProps> = ({ formData, setFormData }) => {
-  const profileData = useStudentProfileStore(state => state.profileData);
-  const { register, formState: { errors }, setValue, control } = useFormContext<StudentFormData>();
+  const { register, formState: { errors }, control } = useFormContext<StudentFormData>();
 
-
-  // Populate form with profile data only once on mount
-  useEffect(() => {
-    const updateFormData = async () => {
-      await setFormData(prev => ({
-        ...prev,
-        add_personal_data: {
-          ...prev.add_personal_data,
-          city_address: profileData.profile.student_info.address,
-          contact_number: profileData.profile.student_info.contact_number,
-        }
-      }));
-      await setValue('add_personal_data.city_address', profileData.profile.student_info.address);
-      await setValue('add_personal_data.contact_number', profileData.profile.student_info.contact_number);
-  
-
-    }
-    updateFormData()
-    // Add other fields here as needed
-  }, [profileData, setValue]);
-
-  // Handle individual field changes
-  const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFieldChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -634,7 +531,8 @@ const ContactInfoForm: React.FC<InfoFormProps> = ({ formData, setFormData }) => 
         [name]: value
       }
     }));
-  };  
+  };
+
   return (
     <Card className="border-0 shadow-none">
       <CardHeader>
@@ -643,103 +541,85 @@ const ContactInfoForm: React.FC<InfoFormProps> = ({ formData, setFormData }) => 
           Contact Information
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="city_address">Current Address*</Label>
-            <Textarea
-              id="city_address"
-              {...register("add_personal_data.city_address", {
-                onChange: handleFieldChange
-              })}
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Current Address - Full Width */}
+          <div className="md:col-span-2">
+            <RequiredFormField
+              type="textarea"
+              name="add_personal_data.city_address"
+              label="Current Address"
+              placeholder="Enter current address"
               defaultValue={formData.add_personal_data.city_address}
-              className={errors.add_personal_data?.city_address ? "border-red-500" : ""}
-              placeholder="Enter Current Address"
+              onChange={handleFieldChange}
             />
-            {errors.add_personal_data?.city_address && (
-              <span className="text-sm text-red-500">{errors.add_personal_data?.city_address.message}</span>
-            )} 
           </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="province_address">Provincial Address</Label>
-            <Textarea
-              id="province_address"
-              {...register("add_personal_data.province_address", {
-                onChange: handleFieldChange
-              })}
-              defaultValue={formData.add_personal_data.province_address}
-              className={errors.add_personal_data?.province_address ? "border-red-500" : ""}
-              placeholder="Enter provincial address"
-            />
-            {errors.add_personal_data?.province_address && (
-              <span className="text-sm text-red-500">{errors.add_personal_data?.province_address.message}</span>
-            )} 
+
+          {/* Provincial Address - Full Width */}
+          <div className="md:col-span-2">
+            <div className="space-y-2">
+              <Label htmlFor="province_address">Provincial Address (Optional)</Label>
+              <Textarea
+                id="province_address"
+                {...register("add_personal_data.province_address", {
+                  onChange: handleFieldChange
+                })}
+                defaultValue={formData.add_personal_data.province_address}
+                placeholder="Enter provincial address"
+              />
+            </div>
           </div>
+
+          {/* Primary Contact Number */}
+          <RequiredFormField
+            type="input"
+            name="add_personal_data.contact_number"
+            label="Primary Contact Number"
+            placeholder="Enter primary contact number"
+            defaultValue={formData.add_personal_data.contact_number}
+            onChange={handleFieldChange}
+          />
+
+          {/* Alternative Contact Number */}
           <div className="space-y-2">
-            <Label htmlFor="contact_number">Primary Contact Number*</Label>
-            <Input
-              id="contact_numbe"
-              {...register("add_personal_data.contact_number", {
-                onChange: handleFieldChange
-              })}
-              defaultValue={formData.add_personal_data.contact_number}
-              className={errors.add_personal_data?.contact_number? "border-red-500" : ""}
-              placeholder="Enter primary contact number"
-            />
-            {errors.add_personal_data?.contact_number && (
-              <span className="text-sm text-red-500">{errors.add_personal_data?.contact_number.message}</span>
-            )}           
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="city_contact_number">Alternative Contact Number</Label>
+            <Label htmlFor="city_contact_number">Alternative Contact Number (Optional)</Label>
             <Input
               id="city_contact_number"
               {...register("add_personal_data.city_contact_number", {
                 onChange: handleFieldChange
               })}
               defaultValue={formData.add_personal_data.city_contact_number}
-              className={errors.add_personal_data?.city_contact_number ? "border-red-500" : ""}
               placeholder="Enter alternative contact number"
             />
-            {errors.add_personal_data?.city_contact_number && (
-              <span className="text-sm text-red-500">{errors.add_personal_data?.city_contact_number.message}</span>
-            )} 
           </div>
+
+          {/* Provincial Contact Number */}
           <div className="space-y-2">
-            <Label htmlFor="province_contact_number">Provincial Contact Number</Label>
+            <Label htmlFor="province_contact_number">Provincial Contact Number (Optional)</Label>
             <Input
               id="province_contact_number"
               {...register("add_personal_data.province_contact_number", {
                 onChange: handleFieldChange
               })}
               defaultValue={formData.add_personal_data.province_contact_number?.toString()}
-              className={errors.add_personal_data?.province_contact_number ? "border-red-500" : ""}
               placeholder="Enter provincial contact number"
             />
-            {errors.add_personal_data?.province_contact_number && (
-              <span className="text-sm text-red-500">{errors.add_personal_data?.province_contact_number.message}</span>
-            )} 
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="citizenship">Citizenship*</Label>
-            <Input
-              id="citizenship"
-              {...register("add_personal_data.citizenship", {
-                onChange: handleFieldChange
-              })}
-              defaultValue={formData.add_personal_data.citizenship}
-              className={errors.add_personal_data?.citizenship ? "border-red-500" : ""}
-              placeholder="Enter citizenship"
-            />
-            {errors.add_personal_data?.citizenship && (
-              <span className="text-sm text-red-500">{errors.add_personal_data?.citizenship.message}</span>
-            )} 
-          </div>
+
+          {/* Citizenship */}
+          <RequiredFormField
+            type="input"
+            name="add_personal_data.citizenship"
+            label="Citizenship"
+            placeholder="Enter citizenship"
+            defaultValue={formData.add_personal_data.citizenship}
+            onChange={handleFieldChange}
+          />
         </div>
       </CardContent>
     </Card>
   );
-};  
+};
 
 
 const FamilyBackgroundForm: React.FC<InfoFormProps> = ({ formData, setFormData }) => {
@@ -1146,8 +1026,7 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
   semesters, 
   isLoading 
 }) => {
-  const { register, formState: { errors }, setValue, control } = useFormContext<StudentFormData>();
-
+  const { register, formState: { errors }, control } = useFormContext<StudentFormData>();
 
   // Loading state
   if (isLoading) {
@@ -1162,10 +1041,9 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
     );
   }
 
-
-
-  // Handle field changes
-  const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFieldChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -1174,11 +1052,44 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
         [name.replace('academic_background.', '')]: value
       }
     }));
-  };  
+  };
 
   const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear + i);
+  const yearOptions = Array.from({ length: 10 }, (_, i) => ({
+    value: (currentYear + i).toString(),
+    label: (currentYear + i).toString()
+  }));
 
+  const applicationTypeOptions = [
+    { value: "New Student", label: "New Student" },
+    { value: "Old Student", label: "Old Student" },
+    { value: "Transferee", label: "Transferee" },
+    { value: "Cross-Enrollee", label: "Cross-Enrollee" }
+  ];
+
+  const studentTypeOptions = [
+    { value: "Graduate", label: "Graduate" },
+    { value: "Undergraduate", label: "Undergraduate" }
+  ];
+
+  const yearLevelOptions = [
+    { value: "1st Year", label: "First Year" },
+    { value: "2nd Year", label: "Second Year" },
+    { value: "3rd Year", label: "Third Year" },
+    { value: "4th Year", label: "Fourth Year" }
+  ];
+
+  const semesterOptions = semesters.map(semester => ({
+    value: semester.id.toString(),
+    label: semester.semester_name
+  }));
+
+  const programOptions = programs
+    .filter(program => program.is_active)
+    .map(program => ({
+      value: program.id.toString(), // Convert to string since select values need to be strings
+      label: `${program.code} - ${program.description}`
+    }));
   return (
     <Card className="border-0 shadow-none">
       <CardHeader>
@@ -1187,277 +1098,195 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
           Academic Information
         </CardTitle>
       </CardHeader>
+      
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="program">Program*</Label>
-            <Controller
-              name="academic_background.program"
-              control={control}
-              render={({ field }) => {
-                const selectedProgram = programs.find(p => p.id === field.value);
-                return (
-                  <div>
-                    <Input
-                      readOnly
-                      value={selectedProgram?.description || ''}
-                      placeholder="No program selected"
-                      onChange={(e) => {
-                        field.onChange(selectedProgram?.id);
-                      }}
-                    />
-                    {errors.academic_background?.program && (
-                      <span className="text-sm text-red-500">{errors.academic_background?.program.message}</span>
-                    )}
-                  </div>
-                );
-              }}
-            />
-          </div>
 
+          {/* Program */}
+          <Controller
+            name="academic_background.program"
+            control={control}
+            defaultValue={formData.academic_background.program}
+            render={({ field }) => (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <Label className="text-sm font-medium">Program</Label>
+                  <TooltipProvider>
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <div className="inline-flex">
+                          <AlertCircle 
+                            className={`h-4 w-4 cursor-help ${
+                              field.value ? "text-green-500" : "text-red-500"
+                            }`}
+                            aria-label="This field is required"
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-sm">This field is required</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Select
+                  value={field.value?.toString()}
+                  onValueChange={(value) => {
+                    const numValue = parseInt(value);
+                    field.onChange(numValue);
+                    setFormData(prev => ({
+                      ...prev,
+                      academic_background: {
+                        ...prev.academic_background,
+                        program: numValue
+                      }
+                    }));
+                  }}
+                >
+                  <SelectTrigger className={errors.academic_background?.program ? "border-red-500" : ""}>
+                    <SelectValue placeholder="Select program" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {programs
+                      .filter(program => program.is_active)
+                      .map(program => (
+                        <SelectItem key={program.id} value={program.id.toString()}>
+                          {`${program.code} - ${program.description}`}
+                        </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.academic_background?.program && (
+                  <span className="text-sm text-red-500">
+                    {errors.academic_background.program.message}
+                  </span>
+                )}
+              </div>
+            )}
+          />          
+
+          {/* Major/Specialization */}  
           <div className="space-y-2">
-            <Label htmlFor="major_in">Major/Specialization</Label>
+            <Label className="text-sm font-medium">Major/Specialization</Label>
             <Input
               id="major_in"
               {...register("academic_background.major_in", {
                 onChange: handleFieldChange
               })}
               defaultValue={formData.academic_background.major_in}
-              className={errors.academic_background?.major_in ? "border-red-500" : ""}
-              placeholder="Major in"
+              placeholder="Enter major/specialization"
             />
-            {errors.academic_background?.major_in && (
-              <span className="text-sm text-red-500">{errors.academic_background?.major_in.message}</span>
+          </div>
+
+          {/* Application Type */}
+          <RequiredFormField
+            type="select"
+            name="academic_background.application_type"
+            label="Application Type"
+            control={control}
+            options={applicationTypeOptions}
+            defaultValue={formData.academic_background.application_type}
+          />
+
+          {/* Student Type */}
+          <RequiredFormField
+            type="select"
+            name="academic_background.student_type"
+            label="Student Type"
+            control={control}
+            options={studentTypeOptions}
+            defaultValue={formData.academic_background.student_type}
+          />
+
+          {/* Entry Semester */}
+          <Controller
+            name="academic_background.semester_entry"
+            control={control}
+            defaultValue={formData.academic_background.semester_entry}
+            render={({ field }) => (
+              <RequiredFormField
+                type="select"
+                name="academic_background.semester_entry"
+                label="Entry Semester"
+                control={control}
+                options={semesters.map(sem => ({
+                  value: sem.id.toString(),
+                  label: sem.semester_name
+                }))}
+                defaultValue={undefined}
+              />
             )}
-          </div>
+          />
 
-          {/* Application Type Select */}
-          <div className="space-y-2">
-            <Label htmlFor="application_type">Application Type*</Label>
-            <Controller
-              name="academic_background.application_type"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value || ""}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    setFormData(prev => ({
-                      ...prev,
-                      academic_background: {
-                        ...prev.academic_background,
-                        application_type: value
-                      }
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select application type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="New Student">New Student</SelectItem>
-                    <SelectItem value="Old Student">Old Student</SelectItem>
-                    <SelectItem value="Transferee">Transferee</SelectItem>
-                    <SelectItem value="Cross-Enrollee">Cross-Enrollee</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
+          {/* Year Level */}
+          <RequiredFormField
+            type="select"
+            name="academic_background.year_level"
+            label="Year Level"
+            control={control}
+            options={yearLevelOptions}
+            defaultValue={formData.academic_background.year_level}
+          />
 
-          {/* Student Type Select */}
-          <div className="space-y-2">
-            <Label htmlFor="student_type">Student Type*</Label>
-            <Controller
-              name="academic_background.student_type"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value || ""}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    setFormData(prev => ({
-                      ...prev,
-                      academic_background: {
-                        ...prev.academic_background,
-                        student_type: value
-                      }
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select student type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Graduate">Graduate</SelectItem>
-                    <SelectItem value="Undergraduate">Undergraduate</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
+          {/* Entry Year */}
+          <Controller
+            name="academic_background.year_entry"
+            control={control}
+            defaultValue={formData.academic_background.year_entry}
+            render={({ field }) => (
+              <RequiredFormField
+                type="select"
+                name="academic_background.year_entry"
+                label="Entry Year"
+                control={control}
+                options={yearOptions}
+                defaultValue={field.value?.toString()}
+              />
+            )}
+          />
 
-          {/* Entry Semester Select */}
-          <div className="space-y-2">
-            <Label htmlFor="semester_entry">Entry Semester*</Label>
-            <Controller
-              name="academic_background.semester_entry"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={undefined}
-                  onValueChange={(value) => {
-                    field.onChange(parseInt(value));
-                    setFormData(prev => ({
-                      ...prev,
-                      academic_background: {
-                        ...prev.academic_background,
-                        semester_entry: parseInt(value)
-                      }
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select semester" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {semesters.map((semester) => (
-                      <SelectItem key={semester.id} value={semester.id.toString()}>
-                        {semester.semester_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-
-          {/* Year Level Select */}
-          <div className="space-y-2">
-            <Label htmlFor="year_level">Year Level*</Label>
-            <Controller
-              name="academic_background.year_level"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value || ""}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    setFormData(prev => ({
-                      ...prev,
-                      academic_background: {
-                        ...prev.academic_background,
-                        year_level: value
-                      }
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select year level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1st Year">First Year</SelectItem>
-                    <SelectItem value="2nd Year">Second Year</SelectItem>
-                    <SelectItem value="3rd Year">Third Year</SelectItem>
-                    <SelectItem value="4th Year">Fourth Year</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-
-          {/* Entry Year Select */}
-          <div className="space-y-2">
-            <Label htmlFor="year_entry">Entry Year*</Label>
-            <Controller
-              name="academic_background.year_entry"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value?.toString() || ""}
-                  onValueChange={(value) => {
-                    field.onChange(parseInt(value));
-                    setFormData(prev => ({
-                      ...prev,
-                      academic_background: {
-                        ...prev.academic_background,
-                        year_entry: parseInt(value)
-                      }
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select entry year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {yearOptions.map((year) => (
-                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-
-          {/* Graduate Year Select */}
-          <div className="space-y-2">
-            <Label htmlFor="year_graduate">Expected Graduation Year*</Label>
-            <Controller
-              name="academic_background.year_graduate"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value?.toString() || ""}
-                  onValueChange={(value) => {
-                    field.onChange(parseInt(value));
-                    setFormData(prev => ({
-                      ...prev,
-                      academic_background: {
-                        ...prev.academic_background,
-                        year_graduate: parseInt(value)
-                      }
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select graduate year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {yearOptions.map((year) => (
-                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
+          {/* Expected Graduation Year */}
+          <Controller
+            name="academic_background.year_graduate"
+            control={control}
+            defaultValue={formData.academic_background.year_graduate}
+            render={({ field }) => (
+              <RequiredFormField
+                type="select"
+                name="academic_background.year_graduate"
+                label="Expected Graduation Year"
+                control={control}
+                options={yearOptions}
+                defaultValue={field.value?.toString()}
+              />
+            )}
+          />
         </div>
       </CardContent>
     </Card>
   );
 };
 
+
+
+
+
 const AcademicHistoryForm: React.FC<InfoFormProps> = ({ formData, setFormData }) => {
-
-  const {
-    register,
-    formState: { errors },
-  } = useForm<AcademicHistoryFormValues>({
-    resolver: zodResolver(academicHistorySchema),
-    defaultValues: formData.academic_history,  
-    mode: "onChange"
-  });
-
-  const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const profileData = useStudentProfileStore(state => state.profileData);
+  const { register, formState: { errors }, control } = useFormContext<StudentFormData>();
+  const [debouncedFormData, setDebouncedFormData] = useDebounce(formData, 300);
+  
+  const handleFieldChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
+    setDebouncedFormData({
       academic_history: {
-        ...prev.academic_history,
-        [name]: value
-      }
-    }));
-  };  
+        ...debouncedFormData.academic_history,
+        [name]: value,
+      },
+    });
+  };
 
   return (
     <Card className="border-0 shadow-none mt-6">
@@ -1473,63 +1302,45 @@ const AcademicHistoryForm: React.FC<InfoFormProps> = ({ formData, setFormData })
           <h3 className="text-lg font-semibold">Elementary Education</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="elementary_school">School Name*</Label>
-              <Input
-                id="elementary_school"
-                {...register("elementary_school", {
-                  onChange: handleFieldChange
-                })}
-                defaultValue={formData.academic_history.elementary_school}
-                className={errors.elementary_school ? "border-red-500" : ""}
+              <RequiredFormField
+                type="input"
+                name="academic_history.elementary_school"
+                label="School Name"
                 placeholder="Enter school name"
+                defaultValue={debouncedFormData.academic_history.elementary_school}
+                onChange={handleFieldChange}
               />
-              {errors.elementary_school && (
-                <span className="text-sm text-red-500">{errors.elementary_school.message}</span>
-              )} 
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="elementary_address">School Address*</Label>
-              <Input
-                id="elementary_address"
-                {...register("elementary_address", {
-                  onChange: handleFieldChange
-                })}
-                defaultValue={formData.academic_history.elementary_address}
-                className={errors.elementary_address ? "border-red-500" : ""}
+              <RequiredFormField
+                type="input"
+                name="academic_history.elementary_address"
+                label="School Address"
                 placeholder="Enter school address"
+                defaultValue={formData.academic_history.elementary_address}
+                onChange={handleFieldChange}
               />
-              {errors.elementary_address && (
-                <span className="text-sm text-red-500">{errors.elementary_address.message}</span>
-              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="elementary_graduate">Year Graduated</Label>
-              <Input
-                id="elementary_graduate"
-                type='number'
-                {...register("elementary_graduate", {
-                  onChange: handleFieldChange,
-                  valueAsNumber: true 
-                })}
+              <RequiredFormField
+                type="input"
+                name="academic_history.elementary_graduate"
+                label="Year Graduated"
+                placeholder="Enter year graduated"
                 defaultValue={formData.academic_history.elementary_graduate}
-                className={errors.elementary_graduate ? "border-red-500" : ""}
-                placeholder="Enter monthly income"
+                onChange={handleFieldChange}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="elementary_honors">Honors/Awards</Label>
               <Input
                 id="elementary_honors"
-                {...register("elementary_honors", {
+                {...register("academic_history.elementary_honors", {
                   onChange: handleFieldChange
                 })}
                 defaultValue={formData.academic_history.elementary_honors}
-                className={errors.elementary_honors ? "border-red-500" : ""}
                 placeholder="Enter honors/awards"
               />
-              {errors.elementary_honors && (
-                <span className="text-sm text-red-500">{errors.elementary_honors.message}</span>
-              )}
             </div>
           </div>
         </div>
@@ -1539,67 +1350,45 @@ const AcademicHistoryForm: React.FC<InfoFormProps> = ({ formData, setFormData })
           <h3 className="text-lg font-semibold">Junior High School</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="junior_highschool">School Name*</Label>
-              <Input
-                id="junior_highschool"
-                {...register("junior_highschool", {
-                  onChange: handleFieldChange
-                })}
-                defaultValue={formData.academic_history.junior_highschool}
-                className={errors.junior_highschool ? "border-red-500" : ""}
+              <RequiredFormField
+                type="input"
+                name="academic_history.junior_highschool"
+                label="School Name"
                 placeholder="Enter school name"
+                defaultValue={formData.academic_history.junior_highschool}
+                onChange={handleFieldChange}
               />
-              {errors.junior_highschool && (
-                <span className="text-sm text-red-500">{errors.junior_highschool.message}</span>
-              )}
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="junior_address">School Address*</Label>
-              <Input
-                id="junior_address"
-                {...register("junior_address", {
-                  onChange: handleFieldChange
-                })}
-                defaultValue={formData.academic_history.junior_address}
-                className={errors.junior_address ? "border-red-500" : ""}
+              <RequiredFormField
+                type="input"
+                name="academic_history.junior_address"
+                label="School Address"
                 placeholder="Enter school address"
+                defaultValue={formData.academic_history.junior_address}
+                onChange={handleFieldChange}
               />
-              {errors.junior_address && (
-                <span className="text-sm text-red-500">{errors.junior_address.message}</span>
-              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="junior_graduate">Year Graduated</Label>
-              <Input
-                id="junior_graduate"
-                type='number'
-                {...register("junior_graduate", {
-                  onChange: handleFieldChange,
-                  valueAsNumber: true 
-                })}
-
-                defaultValue={formData.academic_history.junior_graduate}
-                className={errors.junior_graduate ? "border-red-500" : ""}
+              <RequiredFormField
+                type="input"
+                name="academic_history.junior_graduate"
+                label="Year Graduated"
                 placeholder="Enter year graduated"
+                defaultValue={formData.academic_history.junior_graduate}
+                onChange={handleFieldChange}
               />
-              {errors.junior_graduate && (
-                <span className="text-sm text-red-500">{errors.junior_graduate.message}</span>
-              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="junior_honors">Honors/Awards</Label>
               <Input
                 id="junior_honors"
-                {...register("junior_honors", {
+                {...register("academic_history.junior_honors", {
                   onChange: handleFieldChange
                 })}
                 defaultValue={formData.academic_history.junior_honors}
-                className={errors.junior_honors ? "border-red-500" : ""}
                 placeholder="Enter honors/awards"
               />
-              {errors.junior_honors && (
-                <span className="text-sm text-red-500">{errors.junior_honors.message}</span>
-              )}
             </div>
           </div>
         </div>
@@ -1609,66 +1398,45 @@ const AcademicHistoryForm: React.FC<InfoFormProps> = ({ formData, setFormData })
           <h3 className="text-lg font-semibold">Senior High School</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="senior_highschool">School Name*</Label>
-              <Input
-                id="senior_highschool"
-                {...register("senior_highschool", {
-                  onChange: handleFieldChange
-                })}
-                defaultValue={formData.academic_history.senior_highschool}
-                className={errors.senior_highschool ? "border-red-500" : ""}
+              <RequiredFormField
+                type="input"
+                name="academic_history.senior_highschool"
+                label="School Name"
                 placeholder="Enter school name"
+                defaultValue={formData.academic_history.senior_highschool}
+                onChange={handleFieldChange}
               />
-              {errors.senior_highschool && (
-                <span className="text-sm text-red-500">{errors.senior_highschool.message}</span>
-              )}
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="senior_address">School Address*</Label>
-              <Input
-                id="senior_address"
-                {...register("senior_address", {
-                  onChange: handleFieldChange
-                })}
-                defaultValue={formData.academic_history.senior_address}
-                className={errors.senior_address ? "border-red-500" : ""}
+              <RequiredFormField
+                type="input"
+                name="academic_history.senior_address"
+                label="School Address"
                 placeholder="Enter school address"
+                defaultValue={formData.academic_history.senior_address}
+                onChange={handleFieldChange}
               />
-              {errors.senior_address && (
-                <span className="text-sm text-red-500">{errors.senior_address.message}</span>
-              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="senior_graduate">Year Graduated</Label>
-              <Input
-                id="senior_graduate"
-                type='number'
-                {...register("senior_graduate", {
-                  onChange: handleFieldChange,
-                  valueAsNumber: true 
-                })}
-                defaultValue={formData.academic_history.senior_graduate}
-                className={errors.senior_graduate ? "border-red-500" : ""}
+              <RequiredFormField
+                type="input"
+                name="academic_history.senior_graduate"
+                label="Year Graduated"
                 placeholder="Enter year graduated"
+                defaultValue={formData.academic_history.senior_graduate}
+                onChange={handleFieldChange}
               />
-              {errors.senior_graduate && (
-                <span className="text-sm text-red-500">{errors.senior_graduate.message}</span>
-              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="senior_honors">Honors/Awards</Label>
               <Input
                 id="senior_honors"
-                {...register("senior_honors", {
+                {...register("academic_history.senior_honors", {
                   onChange: handleFieldChange
                 })}
                 defaultValue={formData.academic_history.senior_honors}
-                className={errors.senior_honors ? "border-red-500" : ""}
                 placeholder="Enter honors/awards"
               />
-              {errors.senior_honors && (
-                <span className="text-sm text-red-500">{errors.senior_honors.message}</span>
-              )}
             </div>
           </div>
         </div>
@@ -1681,61 +1449,45 @@ const AcademicHistoryForm: React.FC<InfoFormProps> = ({ formData, setFormData })
               <Label htmlFor="latest_college">School Name</Label>
               <Input
                 id="latest_college"
-                {...register("latest_college", {
+                {...register("academic_history.latest_college", {
                   onChange: handleFieldChange
                 })}
                 defaultValue={formData.academic_history.latest_college}
-                className={errors.latest_college ? "border-red-500" : ""}
                 placeholder="Enter school name"
               />
-              {errors.latest_college && (
-                <span className="text-sm text-red-500">{errors.latest_college.message}</span>
-              )}
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="college_address">School Address</Label>
               <Input
                 id="college_address"
-                {...register("college_address", {
+                {...register("academic_history.college_address", {
                   onChange: handleFieldChange
                 })}
                 defaultValue={formData.academic_history.college_address}
-                className={errors.college_address ? "border-red-500" : ""}
                 placeholder="Enter school address"
               />
-              {errors.college_address && (
-                <span className="text-sm text-red-500">{errors.college_address.message}</span>
-              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="program">Program</Label>
               <Input
                 id="program"
-                {...register("program", {
+                {...register("academic_history.program", {
                   onChange: handleFieldChange
                 })}
                 defaultValue={formData.academic_history.program}
-                className={errors.program ? "border-red-500" : ""}
                 placeholder="Enter program"
               />
-              {errors.program && (
-                <span className="text-sm text-red-500">{errors.program.message}</span>
-              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="college_honors">Honors/Awards</Label>
               <Input
                 id="college_honors"
-                {...register("college_honors", {
+                {...register("academic_history.college_honors", {
                   onChange: handleFieldChange
                 })}
                 defaultValue={formData.academic_history.college_honors}
-                className={errors.college_honors ? "border-red-500" : ""}
                 placeholder="Enter honors/awards"
               />
-              {errors.college_honors && (
-                <span className="text-sm text-red-500">{errors.college_honors.message}</span>
-              )}
             </div>
           </div>
         </div>
@@ -1743,6 +1495,9 @@ const AcademicHistoryForm: React.FC<InfoFormProps> = ({ formData, setFormData })
     </Card>
   );
 };
+
+
+
 
 const StudentRegistrationForm: React.FC = () => {
   const [formData, setFormData] = useState<StudentFormData>(initialFormState);
@@ -1762,11 +1517,14 @@ const StudentRegistrationForm: React.FC = () => {
     mode: "onSubmit",
   });
 
+
+
   useEffect(() => {
     const loadProfileData = async () => {
       try{
         if (profileData?.profile?.student_info) {
           const sexValue = profileData.profile.student_info.sex?.toString() || '';
+          const programValue =profileData.profile.student_info.program
           console.log('Initial sex value from profile:', sexValue);
           console.log('Current formData sex value:', formData.personal_data.sex);
     
@@ -1788,19 +1546,25 @@ const StudentRegistrationForm: React.FC = () => {
               religion: prev.personal_data.religion,
               country: prev.personal_data.country,
             },
+            
+            add_personal_data: {
+              ...prev.add_personal_data,
+              city_address: profileData.profile.student_info.address,
+              contact_number: profileData.profile.student_info.contact_number,
+            },    
             academic_background: {
               ...prev.academic_background,
               application_type: studentInfo.is_transferee ? "Transferee" : "",
               campus: studentInfo.campus,
               year_level: studentInfo.year_level,
-              program: studentInfo.program,
+              program: programValue,
             }
           }));
     
           methods.setValue('academic_background.application_type', 
             studentInfo.is_transferee ? "Transferee" : ""
           );
-          methods.setValue('academic_background.program', studentInfo.program);
+          methods.setValue('academic_background.program', programValue, { shouldValidate: true });
           methods.setValue('academic_background.year_level', studentInfo.year_level);
           methods.setValue('personal_data.basicdata_applicant_id', profileData.profile.student_info.basicdata_applicant_id);
           methods.setValue('personal_data.f_name', profileData.profile.student_info.first_name);
@@ -1810,7 +1574,9 @@ const StudentRegistrationForm: React.FC = () => {
           methods.setValue('personal_data.sex', sexValue, { shouldValidate: true });
           methods.setValue('personal_data.birth_date', profileData.profile.student_info.birth_date);
           methods.setValue('personal_data.email', profileData.profile.student_info.email);
-    
+          methods.setValue('add_personal_data.city_address', profileData.profile.student_info.address);
+          methods.setValue('add_personal_data.contact_number', profileData.profile.student_info.contact_number);
+
         }
     
       }catch(error){
@@ -1833,7 +1599,7 @@ const StudentRegistrationForm: React.FC = () => {
     try {
       console.log("Form values:", data);
       
-      const response = await axios.post('https://afknon.pythonanywhere.com/api/full-student-data/', data);
+      const response = await axios.post('http://127.0.0.1:8000/api/full-student-data/', data);
       
       toast({
         title: "Success!",
