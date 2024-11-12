@@ -1029,21 +1029,6 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
   isLoading 
 }) => {
   const { register, formState: { errors }, control } = useFormContext<StudentFormData>();
-  useEffect(() => {
-    console.log("formdata is changed")
-    }, [formData]);
-  // Loading state
-  if (isLoading) {
-    return (
-      <Card className="border-0 shadow-none">
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-center p-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   const handleFieldChange = React.useCallback(
     debounce(
@@ -1061,6 +1046,24 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
     ),
     []
   );
+  
+  useEffect(() => {
+    console.log("formdata is changed")
+    }, [formData]);
+  // Loading state
+  if (isLoading) {
+    return (
+      <Card className="border-0 shadow-none">
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-center p-8">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 10 }, (_, i) => ({
     value: (currentYear + i).toString(),
