@@ -122,7 +122,7 @@ export default function StudentDashboard(): React.JSX.Element {
 
               <TabsContent value="requirements">
                 <div className="space-y-6">
-                <InDevelopmentNotice/>
+                {/* <InDevelopmentNotice/> */}
                 <DocumentUploadManager/>
                 {/* {personal_data.length? <DocumentUploadManager/> : <RegistrationRequiredNotice />} */}
                 </div>
