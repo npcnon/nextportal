@@ -27,7 +27,8 @@ interface RequiredFormFieldProps {
   type: 'input' | 'textarea' | 'date' | 'select';
   control?: Control<any>;
   options?: { value: string; label: string }[];
-  onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onChange?: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+  parse?: (value: string) => number; // Add the `parse` function
 }
 
 export const RequiredFormField: React.FC<RequiredFormFieldProps> = ({
@@ -39,11 +40,12 @@ export const RequiredFormField: React.FC<RequiredFormFieldProps> = ({
   control,
   options,
   onChange,
+  parse, // Use the `parse` function
 }) => {
   const { register, formState: { errors }, watch } = useFormContext();
-  
+
   const fieldValue = watch(name);
-  
+
   const getNestedError = (path: string) => {
     return path.split('.').reduce((acc: any, curr: string) => {
       return acc?.[curr];
@@ -51,20 +53,24 @@ export const RequiredFormField: React.FC<RequiredFormFieldProps> = ({
   };
 
   const error = getNestedError(name);
-  const registerProps = register(name, { onChange });
+  const registerProps = register(name, {
+    onChange,
+    valueAsNumber: !!parse, // Set `valueAsNumber` if `parse` function is provided
+  });
+// Use the onChange prop here
 
   const renderField = () => {
-    switch(type) {
+    switch (type) {
       case 'select':
         return (
           <Controller
             name={name}
             control={control}
-            defaultValue={defaultValue?.toString()} // Convert to string
+            defaultValue={parse ? parse(defaultValue?.toString() ?? '') : defaultValue} // Convert to number if `parse` is provided
             render={({ field }) => (
               <Select
                 value={field.value?.toString()} // Convert to string
-                onValueChange={field.onChange}
+                onValueChange={(value) => field.onChange(parse ? parse(value) : value)} // Convert to number if `parse` is provided
               >
                 <SelectTrigger className={error ? "border-red-500" : ""}>
                   <SelectValue placeholder={placeholder || `Select ${label.toLowerCase()}`} />

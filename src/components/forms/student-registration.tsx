@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { UserCircle, Home, Users, GraduationCap, School, AlertCircle } from "lucide-react";
 import { useStudentProfileStore } from '@/lib/profile-store';
 import { useToast } from '@/hooks/use-toast'
+import { debounce } from 'lodash';
 import {
   Tooltip,
   TooltipContent,
@@ -27,6 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RequiredFormField } from './required-input';
 import useDebounce from '@/hooks/use-debounce';
+import { NumberInput } from './number-input';
 
 interface Program {
   id: number
@@ -338,8 +340,8 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
     setIsLoading(true);
     try {
       const [programsResponse, semestersResponse] = await Promise.all([
-        axios.get(`http://127.0.0.1:8000/api/program/?campus_id=${campus}`),
-        axios.get(`http://127.0.0.1:8000/api/semester/?campus_id=${campus}`)
+        axios.get(`https://afknon.pythonanywhere.com/api/program/?campus_id=${campus}`),
+        axios.get(`https://afknon.pythonanywhere.com/api/semester/?campus_id=${campus}`)
       ]);
 
       setPrograms(programsResponse.data.results);
@@ -1027,7 +1029,9 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
   isLoading 
 }) => {
   const { register, formState: { errors }, control } = useFormContext<StudentFormData>();
-
+  useEffect(() => {
+    console.log("formdata is changed")
+    }, [formData]);
   // Loading state
   if (isLoading) {
     return (
@@ -1041,19 +1045,22 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
     );
   }
 
-  const handleFieldChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      academic_background: {
-        ...prev.academic_background,
-        [name.replace('academic_background.', '')]: value
-      }
-    }));
-  };
-
+  const handleFieldChange = React.useCallback(
+    debounce(
+      (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({
+          ...prev,
+          academic_background: {
+            ...prev.academic_background,
+            [name.replace('academic_background.', '')]: value,
+          },
+        }));
+      },
+      200 // Debounce delay in milliseconds
+    ),
+    []
+  );
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 10 }, (_, i) => ({
     value: (currentYear + i).toString(),
@@ -1079,17 +1086,8 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
     { value: "4th Year", label: "Fourth Year" }
   ];
 
-  const semesterOptions = semesters.map(semester => ({
-    value: semester.id.toString(),
-    label: semester.semester_name
-  }));
 
-  const programOptions = programs
-    .filter(program => program.is_active)
-    .map(program => ({
-      value: program.id.toString(), // Convert to string since select values need to be strings
-      label: `${program.code} - ${program.description}`
-    }));
+
   return (
     <Card className="border-0 shadow-none">
       <CardHeader>
@@ -1275,18 +1273,26 @@ const AcademicHistoryForm: React.FC<InfoFormProps> = ({ formData, setFormData })
   const profileData = useStudentProfileStore(state => state.profileData);
   const { register, formState: { errors }, control } = useFormContext<StudentFormData>();
   const [debouncedFormData, setDebouncedFormData] = useDebounce(formData, 300);
-  
-  const handleFieldChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setDebouncedFormData({
-      academic_history: {
-        ...debouncedFormData.academic_history,
-        [name]: value,
+  useEffect(() => {
+    console.log("formdata is changed")
+    }, [formData]);
+  const handleFieldChange = React.useCallback(
+    debounce(
+      (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        console.log(`handlefield used`)
+        setFormData((prev) => ({
+          ...prev,
+          academic_history: {
+            ...prev.academic_history,
+            [name.replace('academic_background.', '')]: value,
+          },
+        }));
       },
-    });
-  };
+      5000 // Debounce delay in milliseconds
+    ),
+    []
+  );
 
   return (
     <Card className="border-0 shadow-none mt-6">
@@ -1322,14 +1328,13 @@ const AcademicHistoryForm: React.FC<InfoFormProps> = ({ formData, setFormData })
               />
             </div>
             <div className="space-y-2">
-              <RequiredFormField
-                type="input"
-                name="academic_history.elementary_graduate"
-                label="Year Graduated"
-                placeholder="Enter year graduated"
-                defaultValue={formData.academic_history.elementary_graduate}
-                onChange={handleFieldChange}
-              />
+            <NumberInput
+              name="academic_history.elementary_graduate"
+              label="Year Graduated"
+              placeholder="Enter year graduated"
+              defaultValue={formData.academic_history.elementary_graduate}
+              onChange={handleFieldChange}
+            />
             </div>
             <div className="space-y-2">
               <Label htmlFor="elementary_honors">Honors/Awards</Label>
@@ -1370,14 +1375,14 @@ const AcademicHistoryForm: React.FC<InfoFormProps> = ({ formData, setFormData })
               />
             </div>
             <div className="space-y-2">
-              <RequiredFormField
-                type="input"
-                name="academic_history.junior_graduate"
-                label="Year Graduated"
-                placeholder="Enter year graduated"
-                defaultValue={formData.academic_history.junior_graduate}
-                onChange={handleFieldChange}
-              />
+            <NumberInput
+              name="academic_history.junior_graduate"
+              label="Year Graduated"
+              placeholder="Enter year graduated"
+              defaultValue={formData.academic_history.elementary_graduate}
+              onChange={handleFieldChange}
+            />
+
             </div>
             <div className="space-y-2">
               <Label htmlFor="junior_honors">Honors/Awards</Label>
@@ -1392,7 +1397,7 @@ const AcademicHistoryForm: React.FC<InfoFormProps> = ({ formData, setFormData })
             </div>
           </div>
         </div>
-
+{/*FIX ACADEMIC BACKGROUND UI*/}
         {/* Senior High School */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Senior High School</h3>
@@ -1599,7 +1604,7 @@ const StudentRegistrationForm: React.FC = () => {
     try {
       console.log("Form values:", data);
       
-      const response = await axios.post('http://127.0.0.1:8000/api/full-student-data/', data);
+      const response = await axios.post('https://afknon.pythonanywhere.com/api/full-student-data/', data);
       
       toast({
         title: "Success!",

@@ -241,7 +241,7 @@ const DocumentUploadManager = () => {
         reject(new Error('Upload aborted'));
       });
 
-      xhr.open('POST', 'http://127.0.0.1:8000/api/upload/');
+      xhr.open('POST', 'https://afknon.pythonanywhere.com/api/upload/');
       xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('access_token')}`);
       xhr.send(formData);
     }).catch((error) => {
@@ -267,7 +267,7 @@ const DocumentUploadManager = () => {
   };
 
   const fetchRefreshToken = async (refreshToken: string | null) => {
-    const response = await fetch('http://127.0.0.1:8000/api/refresh-token', {
+    const response = await fetch('https://afknon.pythonanywhere.com/api/refresh-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
