@@ -340,8 +340,8 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
     setIsLoading(true);
     try {
       const [programsResponse, semestersResponse] = await Promise.all([
-        axios.get(`https://afknon.pythonanywhere.com/api/program/?campus_id=${campus}`),
-        axios.get(`https://afknon.pythonanywhere.com/api/semester/?campus_id=${campus}`)
+        axios.get(`https://dangoportal.onrender.com/api/program/?campus_id=${campus}`),
+        axios.get(`https://dangoportal.onrender.com/api/semester/?campus_id=${campus}`)
       ]);
 
       setPrograms(programsResponse.data.results);
@@ -1046,7 +1046,7 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
     ),
     []
   );
-  
+
   useEffect(() => {
     console.log("formdata is changed")
     }, [formData]);
@@ -1607,7 +1607,7 @@ const StudentRegistrationForm: React.FC = () => {
     try {
       console.log("Form values:", data);
       
-      const response = await axios.post('https://afknon.pythonanywhere.com/api/full-student-data/', data);
+      const response = await axios.post('https://dangoportal.onrender.com/api/full-student-data/', data);
       
       toast({
         title: "Success!",

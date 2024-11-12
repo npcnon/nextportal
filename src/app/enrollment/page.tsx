@@ -123,7 +123,7 @@ export default function EnrollmentForm() {
   useEffect(() => {
     const fetchPrograms = async () => {
       try {
-        const response = await axios.get(`https://afknon.pythonanywhere.com/api/program/?campus_id=${formData.campus}`)
+        const response = await axios.get(`https://dangoportal.onrender.com/api/program/?campus_id=${formData.campus}`)
         setPrograms(response.data.results)
       } catch (error) {
         console.error('Failed to fetch programs:', error)
@@ -166,7 +166,7 @@ try{
 
   try {
 
-    const response = await axios.post('https://afknon.pythonanywhere.com/api/stdntbasicinfo/', formData)
+    const response = await axios.post('https://dangoportal.onrender.com/api/stdntbasicinfo/', formData)
     if (response.status === 201) {
       toast({
         title: "Success!",
