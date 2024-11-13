@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://dangoportal.onrender.com/api/'
+const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://djangoportal-backends.onrender.com/api/'
 
 const apiClient = axios.create({
   baseURL,

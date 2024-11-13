@@ -164,7 +164,7 @@ useEffect(() => {
               <h1 className="text-3xl font-bold text-white">
                 {student.f_name} {student.m_name} {student.l_name} {student.suffix}
               </h1>
-              <p className="text-blue-100 mt-1">Student ID: {student.fulldata_applicant_id}</p>
+              <p className="text-blue-100 mt-1">Student ID: {profileData.student_id ? profileData.student_id: "NO ID YET"}</p>
             </div>
           </div>
         </div>

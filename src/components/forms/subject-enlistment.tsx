@@ -52,7 +52,7 @@ export const SubjectEnlistment = () => {
     if (!studentId) return;
 
     try {
-      const response = await axios.get(`https://dangoportal.onrender.com/api/student-enlist/?filter=fulldata_applicant_id=${studentId}`);
+      const response = await axios.get(`https://djangoportal-backends.onrender.com/api/student-enlist/?filter=fulldata_applicant_id=${studentId}`);
       const enrolledIds = response.data.map((subject: any) => subject.class_id);
       setEnrolledSubjects(enrolledIds);
     } catch (error) {
@@ -62,7 +62,7 @@ export const SubjectEnlistment = () => {
 
   const fetchSubjects = async () => {
     try {
-      const response = await axios.get('https://dangoportal.onrender.com/api/class-list/');
+      const response = await axios.get('https://djangoportal-backends.onrender.com/api/class-list/');
       setSubjects(response.data);
     } catch (error) {
       toast({
@@ -78,7 +78,7 @@ export const SubjectEnlistment = () => {
     const studentId = personal_data[0]?.fulldata_applicant_id;
 
     try {
-      await axios.post('https://dangoportal.onrender.com/api/student-enlist/', {
+      await axios.post('https://djangoportal-backends.onrender.com/api/student-enlist/', {
         fulldata_applicant_id: studentId,
         class_id: subjectId
       });
