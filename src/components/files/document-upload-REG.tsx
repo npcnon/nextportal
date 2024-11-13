@@ -1,5 +1,6 @@
 'use client'; 
 
+import { useToast } from '@/hooks/use-toast';
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 
@@ -20,6 +21,7 @@ interface DocumentUploadProps {
   onError?: (error: any) => void;
 }
 
+
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -28,6 +30,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
   onSuccess,
   onError
 }) => {
+  const { toast } = useToast();
   const [fulldata_applicant_id, setFulldata_applicant_id] = useState('');
   const [documentType, setDocumentType] = useState('');
   const [loading, setLoading] = useState(false);
@@ -64,7 +67,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
     maxSize: MAX_FILE_SIZE,
     multiple: false,
   });
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -100,6 +103,11 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
       }
 
       onSuccess?.(data);
+      toast({
+        title: "Document Uploaded Successfully",
+        description: `${documentType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} has been uploaded.`,
+        variant: "default",
+      });
       
       // Reset form
       setFile(null);
