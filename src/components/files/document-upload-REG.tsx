@@ -6,7 +6,7 @@ import { useDropzone } from 'react-dropzone';
 
 interface UploadResponse {
   id: number;
-  fulldata_applicant_id: string;
+  email: string;
   document_type: string;
   status: string;
   filename: string;
@@ -31,7 +31,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
   onError
 }) => {
   const { toast } = useToast();
-  const [fulldata_applicant_id, setFulldata_applicant_id] = useState('');
+  const [email, setFulldata_applicant_id] = useState('');
   const [documentType, setDocumentType] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +78,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         throw new Error('Please select a file to upload');
       }
 
-      if (!fulldata_applicant_id) {
+      if (!email) {
         throw new Error('Email is required');
       }
 
@@ -88,9 +88,9 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('fulldata_applicant_id', fulldata_applicant_id);
+      formData.append('email', email);
       formData.append('document_type', documentType);
-
+ 
       const response = await fetch(apiUrl, {
         method: 'POST',
         body: formData,
@@ -129,13 +129,13 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* FullData Applicant ID */}
         <div>
-          <label htmlFor="fulldata_applicant_id" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
             FullData Applicant ID
           </label>
           <input
-            type="fulldata_applicant_id"
-            id="fulldata_applicant_id"
-            value={fulldata_applicant_id}
+            type="email"
+            id="email"
+            value={email}
             onChange={(e) => setFulldata_applicant_id(e.target.value)}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             required

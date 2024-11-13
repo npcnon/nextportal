@@ -45,8 +45,8 @@ const StudentRegistrationDialog: React.FC<StudentRegistrationDialogProps> = ({ t
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
-        <InDevelopmentNotice/>
-          {/* <StudentRegistrationForm /> */}
+        {/* <InDevelopmentNotice/> */}
+          <StudentRegistrationForm />
         </div>
       </DialogContent>
     </Dialog>
@@ -123,8 +123,8 @@ export default function StudentDashboard(): React.JSX.Element {
               <TabsContent value="requirements">
                 <div className="space-y-6">
                 {/* <InDevelopmentNotice/> */}
-                <DocumentUploadManager/>
-                {/* {personal_data.length? <DocumentUploadManager/> : <RegistrationRequiredNotice />} */}
+                {/* <DocumentUploadManager/> */}
+                {personal_data.length > 0 && personal_data[0].status === 'initially enrolled'? <DocumentUploadManager/> : <RegistrationRequiredNotice />}
                 </div>
               </TabsContent>
 

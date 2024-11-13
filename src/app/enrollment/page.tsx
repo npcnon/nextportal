@@ -138,7 +138,7 @@ export default function EnrollmentForm() {
     fetchPrograms()
   }, [formData.campus]) // This will refetch programs when campus changes
 
-  const yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year']
+  const yearLevels = ['First Year', 'Second Year', 'Third Year', 'Fourth Year']
   const sexOptions = ['Male', 'Female']
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

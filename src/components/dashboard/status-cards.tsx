@@ -4,23 +4,49 @@ import { Clock, BookOpen, CheckCircle2 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import apiClient from '@/lib/axios';
+import { useFullDataStore } from '@/lib/fulldata-store';
+import { useStudentProfileStore } from '@/lib/profile-store';
 
+// Define Document type for documents fetched from API
 interface Document {
   document_type: string;
-  // other properties of documents as needed
+  // Add other properties of Document if needed
+}
+
+// Define possible status types
+type StatusType = 'officially enrolled' | 'pending' | 'rejected' | 'initially enrolled';
+
+// Define type for color and label
+interface StatusDisplay {
+  color: string;
+  label: string;
 }
 
 export const StatusCards: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
   const totalRequiredDocuments = 5;
+  const profileData = useStudentProfileStore(state => state.profileData);
 
+  const { 
+    personal_data,
+    fetchStudentData 
+  } = useFullDataStore();
+  useEffect(() => {
+    setLoading(true)
+    const fetchData = async () => {
+      if (profileData?.profile?.student_info?.basicdata_applicant_id) {
+        await fetchStudentData(profileData.profile.student_info.basicdata_applicant_id);
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [profileData, fetchStudentData]);
   const fetchDocuments = async () => {
     try {
+      setLoading(true)
       const response = await apiClient.get('/documents');
-
-
       setDocuments(response.data.documents || []);
     } catch (error) {
       console.error('Error fetching documents:', error);
@@ -37,24 +63,43 @@ export const StatusCards: React.FC = () => {
   useEffect(() => {
     fetchDocuments();
   }, []);
-  //TODO: fix document auto load and fix refresh key auto load
+
   const submittedDocumentsCount = documents.length;
   const documentProgress = (submittedDocumentsCount / totalRequiredDocuments) * 100;
 
+  // Map statuses to colors and display names
+  const statusDisplay: Record<StatusType, StatusDisplay> = {
+    'pending': { color: 'text-orange-500', label: 'Pending' },
+    'initially enrolled': { color: 'text-yellow-500', label: 'Initially Enrolled' },
+    'officially enrolled': { color: 'text-green-500', label: 'Officially Enrolled' },
+    'rejected': { color: 'text-red-500', label: 'Rejected' },
+  };
+
+  const enrollmentStatus = personal_data?.[0]?.status as StatusType || 'pending';
+  const statusInfo = statusDisplay[enrollmentStatus] || statusDisplay['pending'];
+
   return (
     <div className="grid gap-4 md:grid-cols-3 mb-6">
+      {/* Enrollment Status Card */}
       <Card className="relative overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Enrollment Status</CardTitle>
-          <Clock className="h-4 w-4 text-orange-500" />
+          <Clock className={`h-4 w-4 ${statusInfo.color}`} />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">Pending</div>
-          <p className="text-xs text-gray-500">Initially Enrolled</p>
-          <Progress value={33} className="mt-2" />
-        </CardContent>
+        {loading ? (
+            <div className="text-2xl font-bold">Loading...</div>
+          ) : (
+            <>
+              <div className={`text-2xl font-bold ${statusInfo.color}`}>{statusInfo.label}</div>
+              <p className="text-xs text-gray-500">Current enrollment status</p>
+              <Progress value={enrollmentStatus === 'officially enrolled' ? 100 : 33} className="mt-2" />
+            </>
+          )}
+          </CardContent>
       </Card>
 
+      {/* Enlisted Subjects Card */}
       <Card className="relative overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Enlisted Subjects</CardTitle>
@@ -67,6 +112,7 @@ export const StatusCards: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Requirements Card */}
       <Card className="relative overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Requirements</CardTitle>

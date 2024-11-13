@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { UserCircle, Home, Users, GraduationCap, School, AlertCircle } from "lucide-react";
+import { UserCircle, Home, Users, GraduationCap, School, AlertCircle, Check, Loader } from "lucide-react";
 import { useStudentProfileStore } from '@/lib/profile-store';
 import { useToast } from '@/hooks/use-toast'
 import { debounce } from 'lodash';
@@ -1083,10 +1083,10 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
   ];
 
   const yearLevelOptions = [
-    { value: "1st Year", label: "First Year" },
-    { value: "2nd Year", label: "Second Year" },
-    { value: "3rd Year", label: "Third Year" },
-    { value: "4th Year", label: "Fourth Year" }
+    { value: "First Year", label: "First Year" },
+    { value: "Second Year", label: "Second Year" },
+    { value: "Third Year", label: "Third Year" },
+    { value: "Fourth Year", label: "Fourth Year" }
   ];
 
 
@@ -1214,7 +1214,8 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
                   value: sem.id.toString(),
                   label: sem.semester_name
                 }))}
-                defaultValue={undefined}
+                defaultValue={field.value?.toString()}
+                parse={parseInt}  // Simplified version
               />
             )}
           />
@@ -1426,14 +1427,14 @@ const AcademicHistoryForm: React.FC<InfoFormProps> = ({ formData, setFormData })
               />
             </div>
             <div className="space-y-2">
-              <RequiredFormField
-                type="input"
-                name="academic_history.senior_graduate"
-                label="Year Graduated"
-                placeholder="Enter year graduated"
-                defaultValue={formData.academic_history.senior_graduate}
-                onChange={handleFieldChange}
-              />
+            <NumberInput
+              name="academic_history.senior_graduate"
+              label="Year Graduated"
+              placeholder="Enter year graduated"
+              defaultValue={formData.academic_history.senior_graduate}
+              onChange={handleFieldChange}
+            />
+
             </div>
             <div className="space-y-2">
               <Label htmlFor="senior_honors">Honors/Awards</Label>
@@ -1602,11 +1603,12 @@ const StudentRegistrationForm: React.FC = () => {
 
   // Create the submit handler using handleSubmit from useForm
   const onSubmit = methods.handleSubmit(async (data) => {
+    const isValid = await validateAndSwitchTab();
+    if (!isValid) return;
+  
     setIsSubmitting(true);
-
     try {
       console.log("Form values:", data);
-      
       const response = await axios.post('https://djangoportal-backends.onrender.com/api/full-student-data/', data);
       
       toast({
@@ -1693,7 +1695,7 @@ const StudentRegistrationForm: React.FC = () => {
       <div className="container mx-auto px-4">
         <Card className="max-w-5xl mx-auto">
           <CardContent>
-            <form onSubmit={methods.handleSubmit((data) => console.log(data))}>
+          <form onSubmit={onSubmit}>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <ScrollArea className="w-full">
                   <TabsList className="w-full justify-start">
@@ -1734,9 +1736,18 @@ const StudentRegistrationForm: React.FC = () => {
                   <Button type="button" variant="outline">
                     Save as Draft
                   </Button>
-                  <Button type="submit" className="min-w-[100px]">
-                    Submit Application
-                  </Button>
+                  <Button type="submit" className="min-w-[100px]" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center">
+                      <Loader size={20} className="mr-2" />
+                      Submitting...
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <Check className="mr-2" /> Submit Application
+                    </div>
+                  )}
+                </Button>
                 </div>
               </Tabs>
             </form>

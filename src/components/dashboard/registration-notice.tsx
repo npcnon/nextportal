@@ -8,7 +8,7 @@ const RegistrationRequiredNotice = () => {
       <Alert variant="destructive" className="max-w-md">
         <AlertCircle className="h-5 w-5" />
         <AlertDescription className="ml-2">
-          Registration must be completed before accessing this section
+          You must be Initially Enrolled before accessing this section
         </AlertDescription>
       </Alert>
       
