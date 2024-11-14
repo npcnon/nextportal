@@ -1599,8 +1599,20 @@ const StudentRegistrationForm: React.FC = () => {
       }
     };
     loadProfileData();
+    
   }, [profileData, methods]);
 
+
+  const semesterMap = React.useMemo(() => {
+    return semesters.reduce((acc, semester) => {
+      acc[semester.id] = semester.semester_name;
+      return acc;
+    }, {} as { [key: number]: string });
+  }, [semesters]);
+  //TODO: make the whole component restart when clicking submit thus loads
+  //TODO: make the subject enlistment
+  //TODO: fix year level
+  //TODO: fix document upload types and whatnot
   // Create the submit handler using handleSubmit from useForm
   const onSubmit = methods.handleSubmit(async (data) => {
     const isValid = await validateAndSwitchTab();
@@ -1608,7 +1620,7 @@ const StudentRegistrationForm: React.FC = () => {
   
     setIsSubmitting(true);
     try {
-      console.log("Form values:", data);
+
       const response = await axios.post('https://djangoportal-backends.onrender.com/api/full-student-data/', data);
       
       toast({
