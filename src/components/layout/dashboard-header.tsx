@@ -10,8 +10,6 @@ import {
   GraduationCap,
   Users,
   LayoutDashboard,
-  Bell,
-  Settings,
   LogOut 
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -30,7 +28,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useStudentProfileStore } from '@/lib/profile-store';
 import apiClient, { clearAuthTokens } from '@/lib/axios';
@@ -182,52 +179,52 @@ export const DashboardHeader = () => {
       {(isNavigating || isLoggingOut) && (
         <div className="fixed inset-0 z-[100] bg-white/50 backdrop-blur-sm">
           <div className="absolute top-0 left-0 w-full h-1">
-            <div className="h-full bg-orange-600 animate-loading" />
+            <div className="h-full bg-indigo-600 animate-loading" />
           </div>
         </div>
       )}
 
-      <nav className="sticky top-0 z-50 bg-white border-b">
+      <nav className="sticky top-0 z-50 bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-4">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Button variant="ghost" size="icon" className="lg:hidden text-white hover:bg-white/10">
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-80 p-0">
                   <div className="h-full flex flex-col">
                     {/* Mobile Navigation Profile Section */}
-                    <div className="p-6 bg-orange-50/50">
+                    <div className="p-6 bg-gradient-to-r from-indigo-50 via-blue-50 to-white">
                       <SheetHeader className="mb-6">
-                        <SheetTitle className="text-2xl font-bold">Menu</SheetTitle>
+                        <SheetTitle className="text-2xl font-bold text-indigo-900">Menu</SheetTitle>
                       </SheetHeader>
                       
                       <div className="flex items-center gap-4">
                         <div className="relative w-12 h-12">
                           {isLoadingPicture ? (
-                            <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse" />
+                            <div className="w-12 h-12 rounded-full bg-indigo-100 animate-pulse" />
                           ) : profilePicture?.temporary_url ? (
                             <img
                               src={profilePicture.temporary_url}
                               alt="Profile"
-                              className="w-12 h-12 rounded-full object-cover"
+                              className="w-12 h-12 rounded-full object-cover ring-2 ring-indigo-200"
                               onError={() => setProfilePicture(null)}
                             />
                           ) : (
-                            <UserCircle className="w-12 h-12" />
+                            <UserCircle className="w-12 h-12 text-indigo-600" />
                           )}
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-semibold">{fullName}</span>
-                          <span className="text-sm text-muted-foreground">Student</span>
+                          <span className="font-semibold text-indigo-900">{fullName}</span>
+                          <span className="text-sm text-indigo-600/70">Student</span>
                         </div>
                       </div>
                     </div>
 
-                    <Separator />
+                    <Separator className="bg-indigo-100" />
 
                     {/* Mobile Navigation Items */}
                     <div className="flex-1 overflow-auto p-4">
@@ -236,7 +233,11 @@ export const DashboardHeader = () => {
                           <Button
                             key={item.path}
                             variant={pathname === item.path ? "secondary" : "ghost"}
-                            className="w-full justify-start h-auto py-3"
+                            className={`w-full justify-start h-auto py-3 ${
+                              pathname === item.path 
+                                ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' 
+                                : 'hover:bg-indigo-50 text-indigo-600/70'
+                            }`}
                             onClick={() => handleNavigation(item.path)}
                             disabled={isNavigating}
                           >
@@ -244,7 +245,7 @@ export const DashboardHeader = () => {
                               {item.icon}
                               <div className="flex flex-col items-start">
                                 <span className="font-medium">{item.name}</span>
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-xs text-indigo-600/50">
                                   {item.description}
                                 </span>
                               </div>
@@ -254,13 +255,13 @@ export const DashboardHeader = () => {
                       </div>
                     </div>
 
-                    <Separator />
+                    <Separator className="bg-indigo-100" />
 
                     {/* Mobile Navigation Footer */}
                     <div className="p-4">
                       <Button 
                         variant="destructive" 
-                        className="w-full"
+                        className="w-full bg-red-500 hover:bg-red-600"
                         onClick={handleLogout}
                         disabled={isLoggingOut}
                       >
@@ -282,13 +283,17 @@ export const DashboardHeader = () => {
               </Sheet>
 
               {/* Desktop Navigation */}
-              <h1 className="text-xl font-bold">{getPageTitle()}</h1>
+              <h1 className="text-xl font-bold text-white">{getPageTitle()}</h1>
               <div className="hidden lg:flex items-center space-x-1">
                 {navigationItems.map((item) => (
                   <Button
                     key={item.path}
                     variant={pathname === item.path ? "secondary" : "ghost"}
-                    className="h-9"
+                    className={`h-9 ${
+                      pathname === item.path 
+                        ? 'bg-white/90 text-indigo-600 hover:bg-white' 
+                        : 'text-white hover:bg-white/10'
+                    }`}
                     onClick={() => handleNavigation(item.path)}
                     disabled={isNavigating}
                   >
@@ -299,19 +304,19 @@ export const DashboardHeader = () => {
               </div>
             </div>
 
-            {/* Profile Dropdown (Consistent across mobile/desktop) */}
+            {/* Profile Dropdown */}
             <div className="flex items-center space-x-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2">
+                  <Button variant="ghost" className="flex items-center space-x-2 text-white hover:bg-white/10">
                     <div className="relative w-8 h-8">
                       {isLoadingPicture ? (
-                        <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+                        <div className="w-8 h-8 rounded-full bg-white/20 animate-pulse" />
                       ) : profilePicture?.temporary_url ? (
                         <img
                           src={profilePicture.temporary_url}
                           alt="Profile"
-                          className="w-8 h-8 rounded-full object-cover"
+                          className="w-8 h-8 rounded-full object-cover ring-2 ring-white/30"
                           onError={() => setProfilePicture(null)}
                         />
                       ) : (
@@ -321,24 +326,26 @@ export const DashboardHeader = () => {
                     <span>{fullName}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="text-indigo-900">Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-indigo-100" />
                   <DropdownMenuItem 
                     onClick={() => handleNavigation('/profile')} 
                     disabled={isNavigating || isLoggingOut}
+                    className="text-indigo-600/70 hover:text-indigo-600 hover:bg-indigo-50"
                   >
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => handleNavigation('/settings')}
                     disabled={isNavigating || isLoggingOut}
+                    className="text-indigo-600/70 hover:text-indigo-600 hover:bg-indigo-50"
                   >
                     Settings
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-indigo-100" />
                   <DropdownMenuItem 
-                    className="text-red-600"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     onClick={handleLogout}
                     disabled={isNavigating || isLoggingOut}
                   >

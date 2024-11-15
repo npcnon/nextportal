@@ -31,7 +31,7 @@ const UploadPage = () => {
   return (
     <div className="container mx-auto py-8">
       <DocumentUpload 
-        apiUrl="https://djangoportal-backends.onrender.com/api/admin-documents/"  
+        apiUrl="http://127.0.0.1:8000/api/admin-documents/"  
         onSuccess={handleSuccess}
         onError={handleError}
       />

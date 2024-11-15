@@ -1,7 +1,6 @@
-// components/dashboard/registration-button.tsx
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { FileEdit, AlertCircle, CheckCircle2, Loader, LucideIcon } from "lucide-react";
+import { FileEdit, AlertCircle, CheckCircle2, Loader2, LucideIcon } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -20,8 +19,10 @@ interface StatusConfig {
   tooltip: string;
   badgeText: string;
   badgeVariant: BadgeVariant;
-  badgeClassName?: string;
-  indicator: boolean;
+  buttonStyle: string;
+  badgeStyle: string;
+  iconStyle: string;
+  indicator?: boolean;
 }
 
 interface RegistrationButtonProps {
@@ -30,6 +31,7 @@ interface RegistrationButtonProps {
   disabled?: boolean;
   onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
+
 const statusConfig: Record<RegistrationStatus, StatusConfig> = {
   required: {
     icon: AlertCircle,
@@ -37,6 +39,9 @@ const statusConfig: Record<RegistrationStatus, StatusConfig> = {
     tooltip: "Required: Complete your student registration form",
     badgeText: "Required",
     badgeVariant: "destructive",
+    buttonStyle: "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl",
+    badgeStyle: "bg-white/20 text-white border-none",
+    iconStyle: "text-white/90",
     indicator: true,
   },
   incomplete: {
@@ -45,8 +50,9 @@ const statusConfig: Record<RegistrationStatus, StatusConfig> = {
     tooltip: "Continue your incomplete registration",
     badgeText: "In Progress",
     badgeVariant: "secondary",
-    badgeClassName: "bg-yellow-500 hover:bg-yellow-600 text-white",
-    indicator: false,
+    buttonStyle: "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg hover:shadow-xl",
+    badgeStyle: "bg-white/20 text-white border-none",
+    iconStyle: "text-white/90",
   },
   complete: {
     icon: CheckCircle2,
@@ -54,8 +60,9 @@ const statusConfig: Record<RegistrationStatus, StatusConfig> = {
     tooltip: "View your registration details",
     badgeText: "Complete",
     badgeVariant: "default",
-    badgeClassName: "bg-green-500 hover:bg-green-600 text-white",
-    indicator: false,
+    buttonStyle: "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl",
+    badgeStyle: "bg-white/20 text-white border-none",
+    iconStyle: "text-white/90",
   },
   pending: {
     icon: FileEdit,
@@ -63,15 +70,19 @@ const statusConfig: Record<RegistrationStatus, StatusConfig> = {
     tooltip: "Your registration is being processed",
     badgeText: "Pending",
     badgeVariant: "outline",
-    indicator: false,
+    buttonStyle: "bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl",
+    badgeStyle: "bg-white/20 text-white border-none",
+    iconStyle: "text-white/90",
   },
   loading: {
-    icon: Loader,
+    icon: Loader2,
     text: "Registration Processing",
     tooltip: "Your registration is being processed",
     badgeText: "Loading",
     badgeVariant: "outline",
-    indicator: false,
+    buttonStyle: "bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl",
+    badgeStyle: "bg-white/20 text-white border-none",
+    iconStyle: "text-white/90",
   },
 };
 
@@ -85,34 +96,58 @@ export const RegistrationButton: React.FC<RegistrationButtonProps> = ({
   const Icon = config.icon;
 
   return (
-    <Button
-      size="lg"
-      variant={status === 'required' ? "default" : "secondary"}
-      className={cn(
-        "relative inline-flex items-center gap-2 pr-4",
-        "transition-all duration-200 ease-in-out",
-        className
-      )}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      <Icon className="h-4 w-4 animate-spin" />
-      <span className="font-medium">{config.text}</span>
-      <Badge
-        variant={config.badgeVariant}
-        className={cn(
-          "ml-2 h-5",
-          config.badgeClassName
-        )}
-      >
-        {config.badgeText}
-      </Badge>
-      {config.indicator && (
-        <span className="absolute -top-1 -right-1 flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-        </span>
-      )}
-    </Button>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="lg"
+            className={cn(
+              "relative inline-flex items-center gap-3 px-6 py-6",
+              "transition-all duration-300 ease-in-out",
+              "font-medium rounded-lg",
+              config.buttonStyle,
+              disabled && "opacity-50 cursor-not-allowed",
+              className
+            )}
+            disabled={disabled}
+            onClick={onClick}
+          >
+            <Icon className={cn(
+              "h-5 w-5",
+              config.iconStyle,
+              status === 'loading' && "animate-spin"
+            )} />
+            
+            <span className="font-semibold tracking-wide">
+              {config.text}
+            </span>
+            
+            <Badge
+              variant={config.badgeVariant}
+              className={cn(
+                "ml-2 px-3 py-1",
+                "text-xs font-medium",
+                "transition-all duration-300",
+                config.badgeStyle
+              )}
+            >
+              {config.badgeText}
+            </Badge>
+
+            {config.indicator && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+              </span>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{config.tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
+
+export default RegistrationButton;

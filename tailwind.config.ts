@@ -22,6 +22,18 @@ const config: Config = {
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
+			'benedicto-blue': {
+			50: '#f0f5ff',
+			100: '#e5edff',
+			200: '#cddbfe',
+			300: '#b4c6fc',
+			400: '#8da2fb',
+			500: '#6676f9',
+			600: '#4f4ef7',
+			700: '#4338ca',
+			800: '#1e40af',
+			900: '#1e3a8a',
+			},
   			card: {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
