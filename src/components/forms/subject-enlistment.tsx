@@ -116,7 +116,7 @@ export const SubjectEnlistment = () => {
     const { program, year_level, semester_entry } = academic_background[0];
     
     try {
-      const semester_response = await axios.get(`http://127.0.0.1:8000/api/semester/?campus_id=${profileData.profile.student_info.campus}`);
+      const semester_response = await axios.get(`https://djangoportal-backends.onrender.com/api/semester/?campus_id=${profileData.profile.student_info.campus}`);
       const semesters = semester_response.data.results;
       setSemester(semesters);
   
@@ -126,7 +126,7 @@ export const SubjectEnlistment = () => {
         return;
       }
   
-      const response = await axios.get(`http://127.0.0.1:8000/api/schedules/`, {
+      const response = await axios.get(`https://djangoportal-backends.onrender.com/api/schedules/`, {
         params: {
           program_id: program,
           year_level: year_level,
