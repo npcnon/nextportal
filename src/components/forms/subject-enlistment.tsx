@@ -13,7 +13,7 @@ import {
 import axios from 'axios';
 import { useFullDataStore } from '@/lib/fulldata-store';
 import { useStudentProfileStore } from '@/lib/profile-store';
-
+import { Loader2 } from "lucide-react"; // Add this import
 
 interface Program {
   id: number
@@ -70,143 +70,97 @@ interface Course {
   department_id: number | null;
 }
 
+interface Schedule {
+  schedule_id: number;
+  course: {
+    id: number;
+    code: string;
+    description: string;
+    units: number;
+  };
+  instructor: {
+    name: string;
+    title: string;
+  };
+  room: string;
+  day: string;
+  time: {
+    start: string;
+    end: string;
+  };
+}
+interface Semester {
+  id: number
+  campus_id: number
+  semester_name: string
+  school_year: string
+}
 export const SubjectEnlistment = () => {
   const { toast } = useToast();
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [loading, setLoading] = useState<{ [key: number]: boolean }>({});
-  const [enrolledSubjects, setEnrolledSubjects] = useState<number[]>([]);
-  const [programs, setPrograms] = useState<Program[]>([]);
-  const [semesters, setSemesters] = useState<Semester[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [fetchingSchedules, setFetchingSchedules] = useState<boolean>(true);
   const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
+  const [available_semester, setSemester] = useState<Semester[]>([]);
   const { 
     personal_data,
+    academic_background,
     fetchStudentData 
   } = useFullDataStore();
   const profileData = useStudentProfileStore(state => state.profileData);
 
-  const campusId = profileData.profile.student_info.campus
-  const fetchAcademicData = async (campus: number) => {
+  const fetchSchedules = async () => {
+    if (!academic_background?.[0]) return;
+    
+    setFetchingSchedules(true);
+    const { program, year_level, semester_entry } = academic_background[0];
+    
     try {
-      const [programsResponse, semestersResponse] = await Promise.all([
-        axios.get(`https://djangoportal-backends.onrender.com/api/program/?campus_id=${campus}`),
-        axios.get(`https://djangoportal-backends.onrender.com/api/semester/?campus_id=${campus}`)
-      ]);
-
-      setPrograms(programsResponse.data.results);
-      setSemesters(semestersResponse.data.results);
+      const semester_response = await axios.get(`http://127.0.0.1:8000/api/semester/?campus_id=${profileData.profile.student_info.campus}`);
+      const semesters = semester_response.data.results;
+      setSemester(semesters);
+  
+      const currentSemester = semesters.find((sem: Semester)  => sem.id === semester_entry);
+      if (!currentSemester) {
+        console.error('Semester not found');
+        return;
+      }
+  
+      const response = await axios.get(`http://127.0.0.1:8000/api/schedules/`, {
+        params: {
+          program_id: program,
+          year_level: year_level,
+          semester_id: semester_entry
+        }
+      });
+      
+      setSchedules(response.data.schedules);
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      console.error('Failed to fetch schedules:', error);
       toast({
         title: "Error",
-        description: "Failed to load required data. Please try again.",
+        description: "Failed to load available schedules. Please try again.",
         variant: "destructive",
       });
     } finally {
-
+      setFetchingSchedules(false);
     }
   };
-
   useEffect(() => {
-    if (campusId) {
-      fetchAcademicData(campusId);
+    if (academic_background?.[0]) {
+      fetchSchedules();
     }
-  }, [campusId]);
+  }, [academic_background]);
 
-
-  useEffect(() => {
-    fetchSubjects();
-    if (profileData?.profile?.student_info?.basicdata_applicant_id) {
-      fetchStudentData(profileData.profile.student_info.basicdata_applicant_id);
-      fetchEnrolledSubjects();
-    }
-  }, [profileData, fetchStudentData]);
-
-  const fetchEnrolledSubjects = async () => {
-    const applicant_id = personal_data[0]?.fulldata_applicant_id;
-    if (!applicant_id) return;
-
-    try {
-      const response = await axios.get(`https://djangoportal-backends.onrender.com/api/student-enlist/?filter=fulldata_applicant_id=${applicant_id}`);
-      const enrolledIds = response.data.map((subject: any) => subject.class_id);
-      setEnrolledSubjects(enrolledIds);
-    } catch (error) {
-      console.error('Failed to fetch enrolled subjects:', error);
-    }
-  };
-
-  const fetchSubjects = async () => {
-    try {
-      const [subjectsResponse, employeesResponse] = await Promise.all([
-        axios.get('https://djangoportal-backends.onrender.com/api/class-list/?latest_n=5'),
-        axios.get('https://djangoportal-backends.onrender.com/api/employee/')
-      ]);
-  
-      const subjects = subjectsResponse.data;
-      
-      // Get unique course IDs
-      const courseIds = [...new Set(subjects.map((subject: Subject) => subject.course))];
-      
-      // Fetch courses in parallel
-      const coursePromises = courseIds.map(id => 
-        axios.get(`https://djangoportal-backends.onrender.com/api/course/?filter=id=${id}`)
-      );
-      
-      const courseResponses = await Promise.all(coursePromises);
-      const courses = courseResponses.flatMap(response => response.data);
-  
-      setSubjects(subjects);
-      setCourses(courses);
-      setEmployees(employeesResponse.data);
-  
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load subjects. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  const handleEnlistment = async (subjectId: number) => {
-    setLoading(prev => ({ ...prev, [subjectId]: true }));
-    const applicant_id = personal_data[0]?.fulldata_applicant_id;
-
-    try {
-      await axios.post('https://djangoportal-backends.onrender.com/api/student-enlist/', {
-        fulldata_applicant_id: applicant_id,
-        class_id: subjectId
-      });
-      
-      toast({
-        title: "Success",
-        description: "Successfully enlisted in the subject!",
-      });
-      
-      // Update the enrolled subjects list
-      setEnrolledSubjects(prev => [...prev, subjectId]);
-      fetchSubjects();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to enlist in the subject. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(prev => ({ ...prev, [subjectId]: false }));
-    }
-  };
-
-  const handleSelectSubject = (subjectId: number) => {
+  const handleSelectSubject = (scheduleId: number) => {
     setSelectedSubjects(prev => 
-      prev.includes(subjectId) 
-        ? prev.filter(id => id !== subjectId)
-        : [...prev, subjectId]
+      prev.includes(scheduleId) 
+        ? prev.filter(id => id !== scheduleId)
+        : [...prev, scheduleId]
     );
   };
-  
-  const handleBulkEnlistment = async () => {
+
+  const handleSubmitEnlistment = async () => {
     if (selectedSubjects.length === 0) {
       toast({
         title: "Warning",
@@ -215,162 +169,123 @@ export const SubjectEnlistment = () => {
       });
       return;
     }
-  
+
     const applicant_id = personal_data[0]?.fulldata_applicant_id;
-    if (!applicant_id) return;
-  
-    try {
-      setLoading(prev => {
-        const newLoading = { ...prev };
-        selectedSubjects.forEach(id => {
-          newLoading[id] = true;
-        });
-        return newLoading;
+    if (!applicant_id) {
+      toast({
+        title: "Error",
+        description: "Student ID not found.",
+        variant: "destructive",
       });
-  
-      await Promise.all(
-        selectedSubjects.map(subjectId => 
-          axios.post('https://djangoportal-backends.onrender.com/api/student-enlist/', {
-            fulldata_applicant_id: applicant_id,
-            class_id: subjectId
-          })
-        )
-      );
+      return;
+    }
+
+    console.log(`selected subjects: ${selectedSubjects}`);
+    console.log(`Posting data: { fulldata_applicant_id: ${applicant_id}, class_ids: ${JSON.stringify(selectedSubjects)} }`);
+
+    setLoading(true);
+    try {
+      await axios.post('https://node-mysql-signup-verification-api.onrender.com/enrollment/external/submit-enlistment', {
+        fulldata_applicant_id: applicant_id,
+        class_ids: selectedSubjects
+      });
       
       toast({
         title: "Success",
-        description: "Successfully enlisted in selected subjects!",
+        description: "Successfully submitted enlistment!",
       });
-      
-      setEnrolledSubjects(prev => [...prev, ...selectedSubjects]);
+
       setSelectedSubjects([]);
-      fetchSubjects();
+      fetchSchedules();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to enlist in some subjects. Please try again.",
+        description: "Failed to submit enlistment. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setLoading(prev => {
-        const newLoading = { ...prev };
-        selectedSubjects.forEach(id => {
-          newLoading[id] = false;
-        });
-        return newLoading;
-      });
+      setLoading(false);
     }
-  };
-
-  const getEnrollButtonState = (subject: Subject) => {
-    if (enrolledSubjects.includes(subject.id)) {
-      return {
-        text: "Enlisted",
-        disabled: true,
-        variant: "ghost" as const,
-        className: "bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700"
-      };
-    }
-  
-    if (loading[subject.id]) {
-      return {
-        text: "Processing...",
-        disabled: true,
-        variant: "outline" as const,
-        className: ""
-      };
-    }
-  
-    if (!subject.is_active) {
-      return {
-        text: "Select",
-        disabled: true,
-        variant: "outline" as const,
-        className: ""
-      };
-    }
-  
-    // Define the return type explicitly
-    return {
-      text: selectedSubjects.includes(subject.id) ? "Selected" : "Select",
-      disabled: false,
-      variant: selectedSubjects.includes(subject.id) ? "default" : "outline",
-      className: ""
-    } as const;
-  };
-  
-  // You can also create a type for the button state if you want to be more explicit:
-  type ButtonState = {
-    text: string;
-    disabled: boolean;
-    variant: "link" | "ghost" | "outline" | "default" | "destructive" | "secondary" | null | undefined;
-    className: string;
-  };
+};
 
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between">
-      <CardTitle>Available Subjects</CardTitle>
-      <Button 
-        onClick={handleBulkEnlistment}
-        disabled={selectedSubjects.length === 0}
-        className="ml-auto"
-      >
-        Submit Enlistment ({selectedSubjects.length})
-      </Button>
-    </CardHeader>
+        <CardTitle>Available Subjects</CardTitle>
+        <Button 
+          onClick={handleSubmitEnlistment}
+          disabled={selectedSubjects.length === 0 || loading}
+          className="ml-auto"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            `Submit Enlistment (${selectedSubjects.length})`
+          )}
+        </Button>
+      </CardHeader>
       <CardContent>
-        <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Course Code</TableHead>
-            <TableHead>Course Name</TableHead>
-            <TableHead>Schedule</TableHead>
-            <TableHead>Instructor</TableHead>
-            <TableHead>Room</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {subjects.map((subject) => {
-            const course = courses.find(c => c.id === subject.course);
-            const employee = employees.find(e => e.id === subject.employee);
-            const buttonState = getEnrollButtonState(subject);
-            const scheduleString = `${subject.day} ${subject.start_time.slice(0, 5)} - ${subject.end_time.slice(0, 5)}`;
-            
-            return (
-              <TableRow key={subject.id}>
-                <TableCell>{course?.code || 'N/A'}</TableCell>
-                <TableCell>{course?.description || 'N/A'}</TableCell>
-                <TableCell>{scheduleString}</TableCell>
-                <TableCell>
-                  {employee ? `${employee.first_name} ${employee.last_name}` : 'N/A'}
-                </TableCell>
-                <TableCell>{subject.room}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    subject.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {subject.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </TableCell>
-                <TableCell>
-                <Button 
-                  variant={buttonState.variant}
-                  size="sm"
-                  onClick={() => handleSelectSubject(subject.id)}
-                  disabled={buttonState.disabled}
-                  className={buttonState.className}
-                >
-                  {buttonState.text}
-                </Button>
-                </TableCell>
+        {fetchingSchedules ? (
+          <div className="flex flex-col items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin mb-2" />
+            <p className="text-sm text-muted-foreground">Loading available subjects...</p>
+          </div>
+        ) : schedules.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8">
+            <p className="text-sm text-muted-foreground">No subjects available for enrollment at this time.</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchSchedules} 
+              className="mt-2"
+            >
+              Refresh
+            </Button>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Course Code</TableHead>
+                <TableHead>Course Name</TableHead>
+                <TableHead>Schedule</TableHead>
+                <TableHead>Instructor</TableHead>
+                <TableHead>Room</TableHead>
+                <TableHead>Units</TableHead>
+                <TableHead>Action</TableHead>
               </TableRow>
-            );
-          })}
-        </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {schedules.map((schedule) => {
+                const isSelected = selectedSubjects.includes(schedule.schedule_id);
+                
+                return (
+                  <TableRow key={schedule.schedule_id}>
+                    <TableCell>{schedule.course.code}</TableCell>
+                    <TableCell>{schedule.course.description}</TableCell>
+                    <TableCell>{`${schedule.day} ${schedule.time.start} - ${schedule.time.end}`}</TableCell>
+                    <TableCell>{`${schedule.instructor.title} ${schedule.instructor.name}`}</TableCell>
+                    <TableCell>{schedule.room}</TableCell>
+                    <TableCell>{schedule.course.units}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant={isSelected ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleSelectSubject(schedule.schedule_id)}
+                        disabled={loading}
+                      >
+                        {isSelected ? "Selected" : "Select"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   );

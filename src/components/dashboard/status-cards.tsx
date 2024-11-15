@@ -33,16 +33,26 @@ export const StatusCards: React.FC = () => {
     personal_data,
     fetchStudentData 
   } = useFullDataStore();
+
+
   useEffect(() => {
-    setLoading(true)
     const fetchData = async () => {
-      if (profileData?.profile?.student_info?.basicdata_applicant_id) {
-        await fetchStudentData(profileData.profile.student_info.basicdata_applicant_id);
+      try {
+        if (profileData?.profile?.student_info?.basicdata_applicant_id) {
+          await fetchStudentData(profileData.profile.student_info.basicdata_applicant_id);
+          await fetchDocuments();
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
         setLoading(false);
       }
     };
+  
     fetchData();
   }, [profileData, fetchStudentData]);
+
+
   const fetchDocuments = async () => {
     try {
       setLoading(true)
@@ -56,13 +66,11 @@ export const StatusCards: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      
     }
   };
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
+
 
   const submittedDocumentsCount = documents.length;
   const documentProgress = (submittedDocumentsCount / totalRequiredDocuments) * 100;

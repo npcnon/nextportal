@@ -123,7 +123,7 @@ export default function EnrollmentForm() {
   useEffect(() => {
     const fetchPrograms = async () => {
       try {
-        const response = await axios.get(`https://djangoportal-backends.onrender.com/api/program/?campus_id=${formData.campus}`)
+        const response = await axios.get(`http://127.0.0.1:8000/api/program/?campus_id=${formData.campus}`)
         setPrograms(response.data.results)
       } catch (error) {
         console.error('Failed to fetch programs:', error)
@@ -137,7 +137,7 @@ export default function EnrollmentForm() {
   
     fetchPrograms()
   }, [formData.campus]) // This will refetch programs when campus changes
-
+//TODO: add email verification
   const yearLevels = ['First Year', 'Second Year', 'Third Year', 'Fourth Year']
   const sexOptions = ['Male', 'Female']
 
@@ -166,7 +166,7 @@ try{
 
   try {
 
-    const response = await axios.post('https://djangoportal-backends.onrender.com/api/stdntbasicinfo/', formData)
+    const response = await axios.post('http://127.0.0.1:8000/api/stdntbasicinfo/', formData)
     if (response.status === 201) {
       toast({
         title: "Success!",

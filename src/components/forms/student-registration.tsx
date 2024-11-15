@@ -340,8 +340,8 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
     setIsLoading(true);
     try {
       const [programsResponse, semestersResponse] = await Promise.all([
-        axios.get(`https://djangoportal-backends.onrender.com/api/program/?campus_id=${campus}`),
-        axios.get(`https://djangoportal-backends.onrender.com/api/semester/?campus_id=${campus}`)
+        axios.get(`http://127.0.0.1:8000/api/program/?campus_id=${campus}`),
+        axios.get(`http://127.0.0.1:8000/api/semester/?campus_id=${campus}`)
       ]);
 
       setPrograms(programsResponse.data.results);
@@ -1612,6 +1612,7 @@ const StudentRegistrationForm: React.FC = () => {
   //TODO: make the whole component restart when clicking submit thus loads
   //TODO: make the subject enlistment
   //TODO: fix year level
+  //TODO: make officially enrolled say something that documents and enlistment are already verified and submitted
   //TODO: fix document upload types and whatnot
   // Create the submit handler using handleSubmit from useForm
   const onSubmit = methods.handleSubmit(async (data) => {
@@ -1621,7 +1622,7 @@ const StudentRegistrationForm: React.FC = () => {
     setIsSubmitting(true);
     try {
 
-      const response = await axios.post('https://djangoportal-backends.onrender.com/api/full-student-data/', data);
+      const response = await axios.post('http://127.0.0.1:8000/api/full-student-data/', data);
       
       toast({
         title: "Success!",

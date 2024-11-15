@@ -130,7 +130,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         {/* FullData Applicant ID */}
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            FullData Applicant ID
+            Email
           </label>
           <input
             type="email"

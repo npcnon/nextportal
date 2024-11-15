@@ -115,8 +115,8 @@ export default function StudentDashboard(): React.JSX.Element {
             
             <div className="p-4">
               <TabsContent value="enlistment">
-              <InDevelopmentNotice/>
-              {/* <SubjectEnlistment />  */}
+              {/* <InDevelopmentNotice/> */}
+              <SubjectEnlistment /> 
               {/* {personal_data.length? <SubjectEnlistment /> : <RegistrationRequiredNotice />} */}
               </TabsContent>
 
