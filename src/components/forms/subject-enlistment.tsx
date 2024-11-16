@@ -112,6 +112,11 @@ export const SubjectEnlistment = () => {
   const { program, year_level, semester_entry } = academic_background[0];
 
   const fetchSchedules = async () => {
+    useEffect(() => {
+      if (academic_background?.[0]) {
+        fetchSchedules();
+      }
+    }, [academic_background]);
     if (!academic_background?.[0]) return;
     
     setFetchingSchedules(true);
@@ -123,7 +128,7 @@ export const SubjectEnlistment = () => {
       setSemester(semesters);
   
       const currentSemester = semesters.find((sem: Semester)  => sem.id === semester_entry);
-  
+
       if (!currentSemester) {
         setSchedules([]); // Set empty schedules instead of throwing error
         return;
@@ -154,11 +159,7 @@ export const SubjectEnlistment = () => {
       setFetchingSchedules(false);
     }
   };
-  useEffect(() => {
-    if (academic_background?.[0]) {
-      fetchSchedules();
-    }
-  }, [academic_background]);
+
 
   const handleSelectSubject = (scheduleId: number) => {
     setSelectedSubjects(prev => 

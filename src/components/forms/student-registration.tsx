@@ -1049,7 +1049,13 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
     []
   );
 
-
+  useEffect(() => {
+    const selectedSemester = semesters.find(
+      semester => semester.id === formData.academic_background.semester_entry
+      
+    );
+    setSemesterName(selectedSemester?.semester_name || '')
+    }, [formData.academic_background.semester_entry]);
 
   if (isLoading) {
     return (
@@ -1091,13 +1097,7 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
 
 
 
-  useEffect(() => {
-    const selectedSemester = semesters.find(
-      semester => semester.id === formData.academic_background.semester_entry
-      
-    );
-    setSemesterName(selectedSemester?.semester_name || '')
-    }, [formData.academic_background.semester_entry]);
+
   return (
     <Card className="border-0 shadow-none">
       <CardHeader>
