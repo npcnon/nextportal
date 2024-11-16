@@ -17,9 +17,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Loader2 } from 'lucide-react'
+import { AlertCircle, CheckCircle, GraduationCap, Loader2, Mail, User } from 'lucide-react'
 import { z } from 'zod'
 import { Textarea } from '@/components/ui/textarea'
+import apiClient from '@/lib/axios'
 
 // Mock data for programs and campuses
 
@@ -82,24 +83,11 @@ export default function EnrollmentForm() {
   const [isNavigating, setIsNavigating] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<keyof EnrollmentSchema, string>>>({})
-  const validateForm = () => {
-    try {
-      enrollmentSchema.parse(formData)
-      setErrors({})
-      return true
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const formattedErrors: Partial<Record<keyof EnrollmentSchema, string>> = {}
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            formattedErrors[err.path[0] as keyof EnrollmentSchema] = err.message
-          }
-        })
-        setErrors(formattedErrors)
-      }
-      return false
-    }
-  }
+  const [isEmailVerificationSent, setIsEmailVerificationSent] = useState(false)
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false)
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false)
+  const [isEmailVerified, setIsEmailVerified] = useState(false)
+
   const [formData, setFormData] = useState({
     first_name: '',
     middle_name: '',
@@ -113,17 +101,76 @@ export default function EnrollmentForm() {
     program: '1',
     birth_date: '',
     sex: '',
-    email: ''
+    email: '',
+    email_verification_code: '',
   })
   const handleNavigation = (path: string) => {
     setIsNavigating(true)
     router.push(path)
   }
 
+
+
+  const handleEmailVerification = async () => {
+    setIsVerifyingEmail(true)
+    try {
+      // Replace with your actual API endpoint
+      const response = await axios.post('https://djangoportal-backends.onrender.com/api/emailapi', {
+        email: formData.email
+      })
+      
+      if (response.status === 200) {
+        setIsEmailVerificationSent(true)
+        toast({
+          title: "Verification Code Sent",
+          description: "Please check your email for the verification code.",
+          variant: "default",
+          className: "bg-green-500 text-white",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send verification code. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsVerifyingEmail(false)
+    }
+  }
+  
+  const handleVerificationCodeSubmit = async () => {
+    setIsVerifyingCode(true)
+    try {
+      const response = await axios.put('https://djangoportal-backends.onrender.com/api/emailapi', {
+        email: formData.email,
+        verification_code: formData.email_verification_code
+      })
+      
+      if (response.status === 200) {
+        setIsEmailVerified(true)
+        toast({
+          title: "Success",
+          description: "Email verified successfully!",
+          variant: "default",
+          className: "bg-green-500 text-white",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Invalid verification code. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsVerifyingCode(false)
+    }
+  }
+  
   useEffect(() => {
     const fetchPrograms = async () => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/program/?campus_id=${formData.campus}`)
+        const response = await apiClient.get(`/program/?campus_id=${formData.campus}`)
         setPrograms(response.data.results)
       } catch (error) {
         console.error('Failed to fetch programs:', error)
@@ -157,120 +204,183 @@ export default function EnrollmentForm() {
   }
 
   const handleSubmit = async () => {
-
-try{
-  enrollmentSchema.parse(formData)
-  setErrors({})
-  
-  setIsLoading(true)
-
-  try {
-
-    const response = await axios.post('http://127.0.0.1:8000/api/stdntbasicinfo/', formData)
-    if (response.status === 201) {
+    if (!isEmailVerified) {
       toast({
-        title: "Success!",
-        description: "Your enrollment has been submitted successfully. Please Check your email",
-        variant: "default",
-        className: "bg-green-500 text-white",
+        title: "Email Not Verified",
+        description: "Please verify your email before submitting the enrollment form.",
+        variant: "destructive",
       })
-      handleNavigation('/login') // Use handleNavigation instead of direct router.push
+      return
     }
-  } catch (error) {
-    console.error('Enrollment submission failed:', error)
-    toast({
-      title: "Error",
-      description: "Failed to submit enrollment. Please try again.",
-      variant: "destructive",
-    })
-  } finally {
-    setIsLoading(false)
-    setShowConfirmDialog(false)
-  }
-}catch (error) {
-  if (error instanceof z.ZodError) {
-    const formattedErrors: Partial<Record<keyof EnrollmentSchema, string>> = {}
-    const errorMessages: string[] = []
-    
-    error.errors.forEach((err) => {
-      if (err.path[0]) {
-        // Format the field name to be more readable
-        const fieldName = err.path[0].toString()
-          .replace(/_/g, ' ')
-          .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ')
-        
-        formattedErrors[err.path[0] as keyof EnrollmentSchema] = err.message
-        errorMessages.push(`${fieldName}: ${err.message}`)
+  
+    try {
+      enrollmentSchema.parse(formData)
+      setErrors({})
+      
+      setIsLoading(true)
+  
+      try {
+        const response = await axios.post('https://djangoportal-backends.onrender.com/api/stdntbasicinfo/', formData)
+        if (response.status === 201) {
+          // Don't close the dialog immediately
+          toast({
+            title: "Success!",
+            description: "Your enrollment has been submitted successfully. Please Check your email",
+            variant: "default",
+            className: "bg-green-500 text-white",
+          })
+          // Add a small delay before closing dialog and navigating
+          setTimeout(() => {
+            setShowConfirmDialog(false)
+            handleNavigation('/login')
+          }, 500)
+        }
+      } catch (error) {
+        console.error('Enrollment submission failed:', error)
+        toast({
+          title: "Error",
+          description: "Failed to submit enrollment. Please try again.",
+          variant: "destructive",
+        })
+        setIsLoading(false) // Only reset loading on error
       }
-    })
-    
-    setErrors(formattedErrors)
-    
-    // Show toast with specific error messages
-    toast({
-      title: "Please fix the following errors:",
-      description: (
-        <ul className="list-disc pl-4 mt-2 space-y-1">
-          {errorMessages.map((message, index) => (
-            <li key={index}>{message}</li>
-          ))}
-        </ul>
-      ),
-      variant: "destructive",
-      duration: 5000, // Show for longer since there might be multiple errors
-    })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const formattedErrors: Partial<Record<keyof EnrollmentSchema, string>> = {}
+        const errorMessages: string[] = []
+        
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            // Format the field name to be more readable
+            const fieldName = err.path[0].toString()
+              .replace(/_/g, ' ')
+              .split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ')
+            
+            formattedErrors[err.path[0] as keyof EnrollmentSchema] = err.message
+            errorMessages.push(`${fieldName}: ${err.message}`)
+          }
+        })
+        
+        setErrors(formattedErrors)
+        
+        toast({
+          title: "Please fix the following errors:",
+          description: (
+            <ul className="list-disc pl-4 mt-2 space-y-1">
+              {errorMessages.map((message, index) => (
+                <li key={index}>{message}</li>
+              ))}
+            </ul>
+          ),
+          variant: "destructive",
+          duration: 5000,
+        })
+      }
+      return
+    }
   }
-  return
-}
-
-  }
-
   const ConfirmationDialog = () => (
-    <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Confirm Enrollment Submission</DialogTitle>
-          <DialogDescription>
-            Please review your information carefully. Are you sure you want to submit your enrollment?
+    <Dialog 
+      open={showConfirmDialog} 
+      onOpenChange={(open) => {
+        if (!isLoading) {
+          setShowConfirmDialog(open)
+        }
+      }}
+    >
+      <DialogContent className="sm:max-w-[500px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-6">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="text-2xl font-semibold tracking-tight">
+            Confirm Enrollment
+          </DialogTitle>
+          <DialogDescription className="text-base text-gray-500">
+            Please review your enrollment information carefully before proceeding.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="font-semibold">Name:</p>
-              <p>{`${formData.first_name} ${formData.middle_name} ${formData.last_name}`}</p>
+  
+        <div className="mt-6 space-y-4">
+          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+            {/* Keep the same content rows */}
+            <div className="flex items-center space-x-4 p-2 hover:bg-gray-100 rounded-md transition-colors">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <User className="h-5 w-5 text-blue-600 animate-pulse" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-500">Full Name</p>
+                <p className="text-base font-medium">
+                  {`${formData.first_name} ${formData.middle_name} ${formData.last_name}`}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-semibold">Program:</p>
-              <p>{programs.find(p => p.id === Number(formData.program))?.description}</p>
+  
+            <div className="flex items-center space-x-4 p-2 hover:bg-gray-100 rounded-md transition-colors">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                <GraduationCap className="h-5 w-5 text-purple-600 animate-bounce" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-500">Selected Program</p>
+                <p className="text-base font-medium">
+                  {programs.find(p => p.id === Number(formData.program))?.description}
+                </p>
+              </div>
+            </div>
+  
+            <div className="flex items-center space-x-4 p-2 hover:bg-gray-100 rounded-md transition-colors">
+              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                <Mail className="h-5 w-5 text-orange-600 animate-pulse" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-500">Email Status</p>
+                <div className="flex items-center space-x-2">
+                  {isEmailVerified ? (
+                    <>
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-green-600 font-medium">Verified</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="h-5 w-5 text-red-500" />
+                      <span className="text-red-600 font-medium">Not Verified</span>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => setShowConfirmDialog(false)}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="bg-blue-600 text-white hover:bg-blue-700"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              'Confirm Submission'
-            )}
-          </Button>
-        </DialogFooter>
+  
+        <div className="mt-6">
+          <div className="flex gap-3 justify-end items-center">
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmDialog(false)}
+              disabled={isLoading}
+              className="w-[120px] h-10"
+            >
+              Cancel
+            </Button>
+            <div className="w-[160px] h-10">
+              <Button
+                onClick={handleSubmit}
+                disabled={isLoading}
+                className="w-full h-full bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <div className="w-full flex items-center justify-center space-x-2">
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    'Confirm Enrollment'
+                  )}
+                </div>
+              </Button>
+            </div>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )
@@ -402,23 +512,81 @@ try{
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-700">Contact & Academic Information</h2>
       <div className="grid md:grid-cols-2 gap-6">
-        <div>
+      <div>
           <label className="block text-sm font-medium mb-2 text-gray-600">Email</label>
-          <Input
-            required
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-              errors.email ? 'border-red-500' : ''
-            }`}
-            placeholder="Enter your email"
-          />
+          <div className="flex gap-2">
+            <Input
+              required
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              disabled={isEmailVerificationSent}
+              className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+                errors.email ? 'border-red-500' : ''
+              }`}
+              placeholder="Enter your email"
+            />
+            <Button
+              onClick={handleEmailVerification}
+              disabled={isEmailVerificationSent || isVerifyingEmail || !formData.email}
+              className={`
+                whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700 
+                disabled:bg-gray-400 disabled:text-gray-200
+              `}
+            >
+              {isVerifyingEmail ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                'Verify Email'
+              )}
+            </Button>
+          </div>
           {errors.email && (
             <p className="text-red-500 text-sm mt-1">{errors.email}</p>
           )}
-        </div>
 
+          {/* Verification code input field - only shows after email is sent */}
+          {isEmailVerificationSent && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium mb-2 text-gray-600">
+                Verification Code
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  required
+                  name="email_verification_code"
+                  value={formData.email_verification_code}
+                  onChange={handleChange}
+                  disabled={isEmailVerified}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter verification code"
+                />
+                <Button
+                  onClick={handleVerificationCodeSubmit}
+                  disabled={!formData.email_verification_code || isVerifyingCode || isEmailVerified}
+                  className={`
+                    whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700 
+                    disabled:bg-gray-400 disabled:text-gray-200
+                  `}
+                >
+                  {isVerifyingCode ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : isEmailVerified ? (
+                    'Verified ✓'
+                  ) : (
+                    'Verify Code'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
         <div>
           <label className="block text-sm font-medium mb-2 text-gray-600">Contact Number</label>
           <Input

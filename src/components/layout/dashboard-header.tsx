@@ -32,6 +32,7 @@ import { Separator } from "@/components/ui/separator";
 import { useStudentProfileStore } from '@/lib/profile-store';
 import apiClient, { clearAuthTokens } from '@/lib/axios';
 import { useToast } from '@/hooks/use-toast';
+import { useHeader } from '../providers/header-provider';
 
 interface ProfilePicture {
   id: number;
@@ -52,52 +53,57 @@ export const DashboardHeader = () => {
   const { toast } = useToast();
   const [isNavigating, setIsNavigating] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [profilePicture, setProfilePicture] = useState<ProfilePicture | null>(null);
-  const [isLoadingPicture, setIsLoadingPicture] = useState(true);
-
+  
+  const { 
+    profilePicture, 
+    setProfilePicture, 
+    isLoadingPicture, 
+    setIsLoadingPicture 
+  } = useHeader();
   const profileData = useStudentProfileStore((state) => state.profileData);
   const clearProfile = useStudentProfileStore((state) => state.clearProfile);
   const fullName = profileData.name || 'Loading...';
+
 
   const navigationItems: NavigationItem[] = [
     {
       name: 'Dashboard',
       path: '/dashboard',
-      icon: <LayoutDashboard className="w-5 h-5" />,
+      icon: <LayoutDashboard className="w-5 h-5 text-[#ff8a47]" />, 
       description: 'View your student dashboard',
     },
     {
       name: 'Academics',
       path: '/academics',
-      icon: <BookOpen className="w-5 h-5" />,
+      icon: <BookOpen className="w-5 h-5 text-[#ff8a47]" />, 
       description: 'Access your academic information',
     },
     {
       name: 'Campus Life',
       path: '/campus-life',
-      icon: <GraduationCap className="w-5 h-5" />,
+      icon: <GraduationCap className="w-5 h-5 text-[#ff8a47]" />, 
       description: 'Explore campus activities',
     },
     {
       name: 'Chats',
       path: '/chats',
-      icon: <Users className="w-5 h-5" />,
+      icon: <Users className="w-5 h-5 text-[#ff8a47]" />, 
       description: 'Message your classmates',
     }
   ];
+  
 
   const handleNavigation = (path: string) => {
     setIsNavigating(true);
     router.push(path);
   };
 
-  // Fetch profile picture
   useEffect(() => {
     const fetchProfilePicture = async () => {
       try {
         setIsLoadingPicture(true);
         const response = await apiClient.get('/documents');
-        const profileDoc = response.data.documents.find((doc: any) => doc.document_type === 'Profile Picture');
+        const profileDoc = response.data.documents.find((doc: any) => doc.document_type === 'profile');
         
         if (profileDoc?.temporary_url) {
           setProfilePicture({
@@ -121,7 +127,7 @@ export const DashboardHeader = () => {
     fetchProfilePicture();
     const interval = setInterval(fetchProfilePicture, 45 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [toast]);
+  }, [toast, setProfilePicture, setIsLoadingPicture]);
 
   const handleLogout = async () => {
     try {
@@ -167,7 +173,6 @@ export const DashboardHeader = () => {
     }
   };
 
-  // Get the current page title based on the pathname
   const getPageTitle = (): string => {
     const currentItem = navigationItems.find(item => item.path === pathname);
     return currentItem?.name ?? 'Student Dashboard';
@@ -179,12 +184,12 @@ export const DashboardHeader = () => {
       {(isNavigating || isLoggingOut) && (
         <div className="fixed inset-0 z-[100] bg-white/50 backdrop-blur-sm">
           <div className="absolute top-0 left-0 w-full h-1">
-            <div className="h-full bg-indigo-600 animate-loading" />
+            <div className="h-full bg-blue-600 animate-loading" />
           </div>
         </div>
       )}
-
-      <nav className="sticky top-0 z-50 bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md">
+  
+      <nav className="sticky top-0 z-50 bg-[#1A2A5B] text-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -194,70 +199,62 @@ export const DashboardHeader = () => {
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-80 p-0">
+                <SheetContent side="left" className="w-80 p-0 bg-[#1A2A5B]">
                   <div className="h-full flex flex-col">
-                    {/* Mobile Navigation Profile Section */}
-                    <div className="p-6 bg-gradient-to-r from-indigo-50 via-blue-50 to-white">
+                    <div className="p-6 bg-gradient-to-r from-[#1A2A5B] to-[#0A1A3B]">
                       <SheetHeader className="mb-6">
-                        <SheetTitle className="text-2xl font-bold text-indigo-900">Menu</SheetTitle>
+                        <SheetTitle className="text-2xl font-bold text-white">Menu</SheetTitle>
                       </SheetHeader>
-                      
+  
                       <div className="flex items-center gap-4">
                         <div className="relative w-12 h-12">
                           {isLoadingPicture ? (
-                            <div className="w-12 h-12 rounded-full bg-indigo-100 animate-pulse" />
+                            <div className="w-12 h-12 rounded-full bg-blue-100 animate-pulse" />
                           ) : profilePicture?.temporary_url ? (
                             <img
                               src={profilePicture.temporary_url}
                               alt="Profile"
-                              className="w-12 h-12 rounded-full object-cover ring-2 ring-indigo-200"
+                              className="w-12 h-12 rounded-full object-cover ring-2 ring-[#1A2A5B]"
                               onError={() => setProfilePicture(null)}
                             />
                           ) : (
-                            <UserCircle className="w-12 h-12 text-indigo-600" />
+                            <UserCircle className="w-12 h-12 text-white" />
                           )}
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-semibold text-indigo-900">{fullName}</span>
-                          <span className="text-sm text-indigo-600/70">Student</span>
+                          <span className="font-semibold text-white">{fullName}</span>
+                          <span className="text-sm text-gray-300">Student</span>
                         </div>
                       </div>
                     </div>
-
-                    <Separator className="bg-indigo-100" />
-
+  
+                    <Separator className="bg-gray-700" />
+  
                     {/* Mobile Navigation Items */}
                     <div className="flex-1 overflow-auto p-4">
-                      <div className="space-y-2">
+                    <div className="hidden lg:flex items-center space-x-1">
                         {navigationItems.map((item) => (
                           <Button
                             key={item.path}
                             variant={pathname === item.path ? "secondary" : "ghost"}
-                            className={`w-full justify-start h-auto py-3 ${
-                              pathname === item.path 
-                                ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' 
-                                : 'hover:bg-indigo-50 text-indigo-600/70'
-                            }`}
+                            className={`
+                              h-9 
+                              ${pathname === item.path 
+                                ? 'bg-white text-[#647441] hover:bg-[#8A9B61]' // Green when active, darker green on hover
+                                : 'text-white hover:bg-gray-600'}
+                            `}
                             onClick={() => handleNavigation(item.path)}
                             disabled={isNavigating}
                           >
-                            <div className="flex items-center gap-3">
-                              {item.icon}
-                              <div className="flex flex-col items-start">
-                                <span className="font-medium">{item.name}</span>
-                                <span className="text-xs text-indigo-600/50">
-                                  {item.description}
-                                </span>
-                              </div>
-                            </div>
+                            {item.icon}
+                            <span className="ml-2">{item.name}</span>
                           </Button>
                         ))}
                       </div>
                     </div>
-
-                    <Separator className="bg-indigo-100" />
-
-                    {/* Mobile Navigation Footer */}
+  
+                    <Separator className="bg-gray-700" />
+  
                     <div className="p-4">
                       <Button 
                         variant="destructive" 
@@ -281,19 +278,23 @@ export const DashboardHeader = () => {
                   </div>
                 </SheetContent>
               </Sheet>
+  
+              {/* Logo and Desktop Navigation */}
+              <div className="flex items-center">
+                <img 
+                  src="/img/square_logo.png" 
+                  alt="Logo" 
+                  className="h-40 w-40 object-contain -ml-6"
+                />
+                <h1 className="text-xl font-bold text-white ml-10">{getPageTitle()}</h1>
+              </div>
 
-              {/* Desktop Navigation */}
-              <h1 className="text-xl font-bold text-white">{getPageTitle()}</h1>
               <div className="hidden lg:flex items-center space-x-1">
                 {navigationItems.map((item) => (
                   <Button
                     key={item.path}
                     variant={pathname === item.path ? "secondary" : "ghost"}
-                    className={`h-9 ${
-                      pathname === item.path 
-                        ? 'bg-white/90 text-indigo-600 hover:bg-white' 
-                        : 'text-white hover:bg-white/10'
-                    }`}
+                    className={`h-9 ${pathname === item.path ? 'bg-white/90 text-[#1A2A5B] hover:bg-white' : 'text-white hover:bg-gray-600'}`}
                     onClick={() => handleNavigation(item.path)}
                     disabled={isNavigating}
                   >
@@ -303,12 +304,12 @@ export const DashboardHeader = () => {
                 ))}
               </div>
             </div>
-
+  
             {/* Profile Dropdown */}
             <div className="flex items-center space-x-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2 text-white hover:bg-white/10">
+                  <Button variant="ghost" className="flex items-center space-x-2 text-white hover:bg-gray-600">
                     <div className="relative w-8 h-8">
                       {isLoadingPicture ? (
                         <div className="w-8 h-8 rounded-full bg-white/20 animate-pulse" />
@@ -326,26 +327,26 @@ export const DashboardHeader = () => {
                     <span>{fullName}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="text-indigo-900">Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-indigo-100" />
+                <DropdownMenuContent align="end" className="w-56 bg-[#ffffff] text-gray-200">
+                  <DropdownMenuLabel className="text-[#1A2A5B]">Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-[#1A2A5B]" />
                   <DropdownMenuItem 
                     onClick={() => handleNavigation('/profile')} 
                     disabled={isNavigating || isLoggingOut}
-                    className="text-indigo-600/70 hover:text-indigo-600 hover:bg-indigo-50"
+                    className="text-[#1A2A5B] hover:text-white hover:bg-gray-700"
                   >
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => handleNavigation('/settings')}
                     disabled={isNavigating || isLoggingOut}
-                    className="text-indigo-600/70 hover:text-indigo-600 hover:bg-indigo-50"
+                    className="text-[#1A2A5B] hover:text-white hover:bg-gray-700"
                   >
                     Settings
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-indigo-100" />
+                  <DropdownMenuSeparator className="bg-[#1A2A5B]" />
                   <DropdownMenuItem 
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-500 hover:text-red-600 hover:bg-gray-700"
                     onClick={handleLogout}
                     disabled={isNavigating || isLoggingOut}
                   >

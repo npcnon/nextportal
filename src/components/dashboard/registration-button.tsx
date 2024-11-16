@@ -39,9 +39,9 @@ const statusConfig: Record<RegistrationStatus, StatusConfig> = {
     tooltip: "Required: Complete your student registration form",
     badgeText: "Required",
     badgeVariant: "destructive",
-    buttonStyle: "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl",
-    badgeStyle: "bg-white/20 text-white border-none",
-    iconStyle: "text-white/90",
+    buttonStyle: "bg-[#1A2A5B] hover:bg-[#1A2A5B]/80 text-white shadow-lg hover:shadow-xl",
+    badgeStyle: "bg-[#D44D00] text-white border-none", // Orange badge for "Required"
+    iconStyle: "text-[#FF8C00] hover:text-[#e76000]", // Lighter orange icon for "Required"
     indicator: true,
   },
   incomplete: {
@@ -50,8 +50,8 @@ const statusConfig: Record<RegistrationStatus, StatusConfig> = {
     tooltip: "Continue your incomplete registration",
     badgeText: "In Progress",
     badgeVariant: "secondary",
-    buttonStyle: "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg hover:shadow-xl",
-    badgeStyle: "bg-white/20 text-white border-none",
+    buttonStyle: "bg-[#1A2A5B] hover:bg-[#1A2A5B]/80 text-white shadow-lg hover:shadow-xl",
+    badgeStyle: "bg-[#D44D00] text-white border-none",
     iconStyle: "text-white/90",
   },
   complete: {
@@ -60,8 +60,8 @@ const statusConfig: Record<RegistrationStatus, StatusConfig> = {
     tooltip: "View your registration details",
     badgeText: "Complete",
     badgeVariant: "default",
-    buttonStyle: "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl",
-    badgeStyle: "bg-white/20 text-white border-none",
+    buttonStyle: "bg-[#1A2A5B] hover:bg-[#1A2A5B]/80 text-white shadow-lg hover:shadow-xl",
+    badgeStyle: "bg-[#D44D00] text-white border-none",
     iconStyle: "text-white/90",
   },
   pending: {
@@ -70,8 +70,8 @@ const statusConfig: Record<RegistrationStatus, StatusConfig> = {
     tooltip: "Your registration is being processed",
     badgeText: "Pending",
     badgeVariant: "outline",
-    buttonStyle: "bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl",
-    badgeStyle: "bg-white/20 text-white border-none",
+    buttonStyle: "bg-[#1A2A5B] hover:bg-[#1A2A5B]/80 text-white shadow-lg hover:shadow-xl",
+    badgeStyle: "bg-[#D44D00] text-white border-none",
     iconStyle: "text-white/90",
   },
   loading: {
@@ -80,8 +80,8 @@ const statusConfig: Record<RegistrationStatus, StatusConfig> = {
     tooltip: "Your registration is being processed",
     badgeText: "Loading",
     badgeVariant: "outline",
-    buttonStyle: "bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl",
-    badgeStyle: "bg-white/20 text-white border-none",
+    buttonStyle: "bg-[#1A2A5B] hover:bg-[#1A2A5B]/80 text-white shadow-lg hover:shadow-xl",
+    badgeStyle: "bg-[#D44D00] text-white border-none",
     iconStyle: "text-white/90",
   },
 };

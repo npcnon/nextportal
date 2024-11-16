@@ -29,6 +29,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RequiredFormField } from './required-input';
 import useDebounce from '@/hooks/use-debounce';
 import { NumberInput } from './number-input';
+import apiClient from '@/lib/axios';
+import router from 'next/router';
 
 interface Program {
   id: number
@@ -340,8 +342,8 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
     setIsLoading(true);
     try {
       const [programsResponse, semestersResponse] = await Promise.all([
-        axios.get(`http://127.0.0.1:8000/api/program/?campus_id=${campus}`),
-        axios.get(`http://127.0.0.1:8000/api/semester/?campus_id=${campus}`)
+        apiClient.get(`/program/?campus_id=${campus}`),
+        apiClient.get(`/semester/?campus_id=${campus}`),
       ]);
 
       setPrograms(programsResponse.data.results);
@@ -1029,7 +1031,7 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
   isLoading 
 }) => {
   const { register, formState: { errors }, control } = useFormContext<StudentFormData>();
-
+  const [semesterName, setSemesterName] = useState<string>('');
   const handleFieldChange = React.useCallback(
     debounce(
       (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -1047,10 +1049,8 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
     []
   );
 
-  useEffect(() => {
-    console.log("formdata is changed")
-    }, [formData]);
-  // Loading state
+
+
   if (isLoading) {
     return (
       <Card className="border-0 shadow-none">
@@ -1091,6 +1091,13 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
 
 
 
+  useEffect(() => {
+    const selectedSemester = semesters.find(
+      semester => semester.id === formData.academic_background.semester_entry
+      
+    );
+    setSemesterName(selectedSemester?.semester_name || '')
+    }, [formData.academic_background.semester_entry]);
   return (
     <Card className="border-0 shadow-none">
       <CardHeader>
@@ -1199,26 +1206,18 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
             defaultValue={formData.academic_background.student_type}
           />
 
-          {/* Entry Semester */}
-          <Controller
-            name="academic_background.semester_entry"
-            control={control}
-            defaultValue={formData.academic_background.semester_entry}
-            render={({ field }) => (
-              <RequiredFormField
-                type="select"
-                name="academic_background.semester_entry"
-                label="Entry Semester"
-                control={control}
-                options={semesters.map(sem => ({
-                  value: sem.id.toString(),
-                  label: sem.semester_name
-                }))}
-                defaultValue={field.value?.toString()}
-                parse={parseInt}  // Simplified version
-              />
-            )}
-          />
+          {/* Updated Semester Entry field */}
+          <div className="space-y-2">
+            <Label htmlFor="email">Semester Entry (Read Only)</Label>
+            <Input 
+              id="email"
+              type="email"
+              readOnly
+              defaultValue={semesterName}
+              className="bg-gray-50"
+              placeholder="Email is empty"
+            />
+          </div>
 
           {/* Year Level */}
           <RequiredFormField
@@ -1519,14 +1518,29 @@ const StudentRegistrationForm: React.FC = () => {
     const { programs, semesters, isLoading: isLoadingAcademicData } = useAcademicData({
       campusId: profileData?.profile?.student_info?.campus
     });
-
   const methods = useForm<StudentFormData>({
     resolver: zodResolver(studentFormSchema),
     defaultValues: formData,
     mode: "onSubmit",
   });
 
-
+  useEffect(() => {
+    if (semesters.length > 0 && !formData.academic_background.semester_entry) {
+      const semesterValue = semesters[0]?.id;
+      
+      setFormData(prev => ({
+        ...prev,
+        academic_background: {
+          ...prev.academic_background,
+          semester_entry: semesterValue
+        }
+      }));
+  
+      methods.setValue('academic_background.semester_entry', semesterValue, {
+        shouldValidate: true
+      });
+    }
+  }, [semesters, methods]);
 
   useEffect(() => {
     const loadProfileData = async () => {
@@ -1599,37 +1613,33 @@ const StudentRegistrationForm: React.FC = () => {
       }
     };
     loadProfileData();
-    
+
   }, [profileData, methods]);
 
 
-  const semesterMap = React.useMemo(() => {
-    return semesters.reduce((acc, semester) => {
-      acc[semester.id] = semester.semester_name;
-      return acc;
-    }, {} as { [key: number]: string });
-  }, [semesters]);
+
   //TODO: make the whole component restart when clicking submit thus loads
   //TODO: make the subject enlistment
   //TODO: fix year level
   //TODO: make officially enrolled say something that documents and enlistment are already verified and submitted
   //TODO: fix document upload types and whatnot
   // Create the submit handler using handleSubmit from useForm
-  const onSubmit = methods.handleSubmit(async (data) => {
-    const isValid = await validateAndSwitchTab();
-    if (!isValid) return;
-  
+
+const handleFormSubmit = async (data: StudentFormData) => {
     setIsSubmitting(true);
     try {
-
-      const response = await axios.post('http://127.0.0.1:8000/api/full-student-data/', data);
+      const response = await axios.post('https://djangoportal-backends.onrender.com/api/full-student-data/', data);
       
       toast({
         title: "Success!",
         description: "Your registration has been submitted successfully.",
         variant: "default",
       });
-      
+      setTimeout(() => {
+        window.location.href = window.location.href;
+        // OR
+        // window.location.replace(window.location.href);
+      }, 1500);
       methods.reset(initialFormState);
     } catch (error) {
       console.error("Submission error:", error);
@@ -1641,31 +1651,124 @@ const StudentRegistrationForm: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
-  });
+  };
 
-  // Create a separate function to handle validation and tab switching
+  // Create the submit handler
   const validateAndSwitchTab = async () => {
     const errors = methods.formState.errors;
+    console.log('Current form data:', methods.getValues());
+    console.log('Validation errors:', errors);
     
+    // Log specific section errors
     if (errors.personal_data) {
+      console.log('Personal data errors:', errors.personal_data);
       setActiveTab("personal");
-    } else if (errors.add_personal_data) {
+    }
+    if (errors.add_personal_data) {
+      console.log('Contact info errors:', errors.add_personal_data);
       setActiveTab("contact");
-    } else if (errors.family_background) {
+    }
+    if (errors.family_background) {
+      console.log('Family background errors:', errors.family_background);
       setActiveTab("family");
-    } else if (errors.academic_background || errors.academic_history) {
+    }
+    if (errors.academic_background || errors.academic_history) {
+      console.log('Academic errors:', {
+        background: errors.academic_background,
+        history: errors.academic_history
+      });
       setActiveTab("academic");
     }
 
+    const formState = methods.formState;
+    console.log('Form State:', {
+      isDirty: formState.isDirty,
+      isSubmitting: formState.isSubmitting,
+      isValid: formState.isValid,
+      submitCount: formState.submitCount
+    });
+
+    // Try manual validation
+    const isValid = await methods.trigger();
+    console.log('Manual validation result:', isValid);
+
     if (Object.keys(errors).length > 0) {
+      // Show which fields are invalid
+      const invalidFields = Object.entries(methods.getValues())
+        .map(([key, value]) => ({
+          field: key,
+          value: value,
+          hasError: errors[key as keyof typeof errors] !== undefined
+        }));
+      console.log('Field validation status:', invalidFields);
+
       toast({
         title: "Validation Error",
-        description: "Please check all required fields and try again.",
+        description: (
+          <div className="space-y-2">
+            <p>Please check the following sections:</p>
+            <ul className="list-disc pl-4">
+              {errors.personal_data && <li>Personal Information</li>}
+              {errors.add_personal_data && <li>Contact Information</li>}
+              {errors.family_background && <li>Family Background</li>}
+              {errors.academic_background && <li>Academic Background</li>}
+              {errors.academic_history && <li>Academic History</li>}
+            </ul>
+          </div>
+        ),
         variant: "destructive",
       });
       return false;
     }
     return true;
+  };
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Form submission started');
+    
+    // Log current form values
+    const currentValues = methods.getValues();
+    console.log('Current form values:', currentValues);
+    
+    try {
+      const isValid = await validateAndSwitchTab();
+      console.log('Validation result:', isValid);
+      
+      if (!isValid) {
+        console.log('Validation failed, stopping submission');
+        return;
+      }
+
+      setIsSubmitting(true);
+      const response = await axios.post(
+        'https://djangoportal-backends.onrender.com/api/full-student-data/', 
+        currentValues
+      );
+      
+      console.log('Submission response:', response);
+      
+      toast({
+        title: "Success!",
+        description: "Your registration has been submitted successfully.",
+        variant: "default",
+      });
+      setTimeout(() => {
+        window.location.href = window.location.href;
+        // OR
+        // window.location.replace(window.location.href);
+      }, 1500);
+      methods.reset(initialFormState);
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem submitting your registration. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -1708,8 +1811,7 @@ const StudentRegistrationForm: React.FC = () => {
       <div className="container mx-auto px-4">
         <Card className="max-w-5xl mx-auto">
           <CardContent>
-          <form onSubmit={onSubmit}>
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <form onSubmit={methods.handleSubmit(handleFormSubmit)} noValidate>              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <ScrollArea className="w-full">
                   <TabsList className="w-full justify-start">
                     <TabsTrigger value="personal">Personal Info</TabsTrigger>
@@ -1749,18 +1851,23 @@ const StudentRegistrationForm: React.FC = () => {
                   <Button type="button" variant="outline">
                     Save as Draft
                   </Button>
-                  <Button type="submit" className="min-w-[100px]" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <div className="flex items-center justify-center">
-                      <Loader size={20} className="mr-2" />
-                      Submitting...
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center">
-                      <Check className="mr-2" /> Submit Application
-                    </div>
-                  )}
-                </Button>
+                  <Button 
+                    type="submit"
+                    className="min-w-[100px]" 
+                    disabled={isSubmitting}
+                    onClick={() => methods.handleSubmit(handleFormSubmit)()}
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center justify-center">
+                        <Loader size={20} className="mr-2" />
+                        Submitting...
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        <Check className="mr-2" /> Submit Application
+                      </div>
+                    )}
+                  </Button>
                 </div>
               </Tabs>
             </form>

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { StatusCards } from '@/components/dashboard/status-cards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SubjectEnlistment } from '@/components/forms/subject-enlistment';
-import DocumentUploadManager from '@/components/files/DocumentSubmission';
+import DocumentSubmission from '@/components/files/DocumentSubmission';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -54,8 +54,8 @@ export default function StudentDashboard(): React.JSX.Element {
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-center justify-between">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-indigo-900 tracking-tight">Student Dashboard</h1>
-            <p className="text-indigo-600/70">Manage your academic journey</p>
+            <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Student Dashboard</h1>
+            <p className="text-gray-600">Manage your academic journey</p>
           </div>
           {isLoading ? (
             <StudentRegistrationDialog 
@@ -74,48 +74,52 @@ export default function StudentDashboard(): React.JSX.Element {
 
         <StatusCards />
         
-        <div className="mt-8 bg-white rounded-xl shadow-lg border border-indigo-100 overflow-hidden">
-          <Tabs defaultValue="enlistment" className="space-y-4">
-            <ScrollArea className="w-full border-b border-indigo-100">
-              <div className="px-6">
-                <TabsList className="h-16">
-                  <TabsTrigger 
-                    value="enlistment"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-blue-600 
-                             data-[state=active]:text-white hover:bg-indigo-50 data-[state=active]:hover:from-indigo-700 
-                             data-[state=active]:hover:to-blue-700 transition-all duration-300 px-6 gap-2"
-                  >
-                    <GraduationCap className="w-4 h-4" />
-                    Subject Enlistment
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="requirements"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-blue-600 
-                             data-[state=active]:text-white hover:bg-indigo-50 data-[state=active]:hover:from-indigo-700 
-                             data-[state=active]:hover:to-blue-700 transition-all duration-300 px-6 gap-2"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Requirements
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="payment"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-blue-600 
-                             data-[state=active]:text-white hover:bg-indigo-50 data-[state=active]:hover:from-indigo-700 
-                             data-[state=active]:hover:to-blue-700 transition-all duration-300 px-6 gap-2"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    Payment
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-            </ScrollArea>
-            
+        <div className="mt-8 bg-white rounded-xl shadow-lg border border-[#1A2A5B]/20 overflow-hidden">
+  <Tabs defaultValue="enlistment" className="space-y-4">
+    <ScrollArea className="w-full border-b border-[#1A2A5B]/20">
+      <div className="px-6">
+        <TabsList className="h-16">
+          <TabsTrigger 
+            value="enlistment"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] data-[state=active]:to-[#1A2A5B] 
+                     data-[state=active]:text-white hover:bg-[#1A2A5B]/10 data-[state=active]:hover:from-[#1A2A5B] 
+                     data-[state=active]:hover:to-[#1A2A5B]/90 transition-all duration-300 px-6 gap-2"
+          >
+            <GraduationCap className="w-4 h-4" />
+            Subject Enlistment
+          </TabsTrigger>
+          <TabsTrigger 
+            value="requirements"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] data-[state=active]:to-[#1A2A5B] 
+                     data-[state=active]:text-white hover:bg-[#1A2A5B]/10 data-[state=active]:hover:from-[#1A2A5B] 
+                     data-[state=active]:hover:to-[#1A2A5B]/90 transition-all duration-300 px-6 gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Requirements
+          </TabsTrigger>
+          <TabsTrigger 
+            value="payment"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] data-[state=active]:to-[#1A2A5B] 
+                     data-[state=active]:text-white hover:bg-[#1A2A5B]/10 data-[state=active]:hover:from-[#1A2A5B] 
+                     data-[state=active]:hover:to-[#1A2A5B]/90 transition-all duration-300 px-6 gap-2"
+          >
+            <CreditCard className="w-4 h-4" />
+            Payment
+          </TabsTrigger>
+        </TabsList>
+      </div>
+    </ScrollArea>
+
             <div className="p-6">
               <TabsContent 
                 value="enlistment" 
                 className="bg-white rounded-xl"
               >
-                <SubjectEnlistment />
+                
+                {personal_data.length > 0 && personal_data[0].status === 'initially enrolled' 
+                    ? <SubjectEnlistment />
+                    : <RegistrationRequiredNotice />
+                  }
               </TabsContent>
 
               <TabsContent 
@@ -124,7 +128,7 @@ export default function StudentDashboard(): React.JSX.Element {
               >
                 <div className="space-y-6">
                   {personal_data.length > 0 && personal_data[0].status === 'initially enrolled' 
-                    ? <DocumentUploadManager/> 
+                    ? <DocumentSubmission/> 
                     : <RegistrationRequiredNotice />
                   }
                 </div>
@@ -134,11 +138,11 @@ export default function StudentDashboard(): React.JSX.Element {
                 value="payment"
                 className="bg-white rounded-xl"
               >
-                <TabContent className="text-indigo-600/70">
+                <TabContent className="text-[#1A2A5B]/70">
                   <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                    <CreditCard className="w-16 h-16 text-indigo-300" />
-                    <h3 className="text-xl font-semibold text-indigo-900">Payment Section Coming Soon</h3>
-                    <p className="text-indigo-600/70 max-w-md text-center">
+                    <CreditCard className="w-16 h-16 text-[#1A2A5B]/50" />
+                    <h3 className="text-xl font-semibold text-[#1A2A5B]">Payment Section Coming Soon</h3>
+                    <p className="text-[#1A2A5B]/70 max-w-md text-center">
                       We're working on bringing you a seamless payment experience. Check back soon!
                     </p>
                   </div>
@@ -147,6 +151,7 @@ export default function StudentDashboard(): React.JSX.Element {
             </div>
           </Tabs>
         </div>
+
       </main>
     </div>
   );
@@ -158,8 +163,8 @@ const StudentRegistrationDialog: React.FC<StudentRegistrationDialogProps> = ({ t
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="max-w-5xl h-[90vh] overflow-hidden bg-gradient-to-br from-white to-indigo-50/30 border border-indigo-100 shadow-xl">
-        <DialogHeader className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-8 rounded-t-lg">
+      <DialogContent className="max-w-5xl h-[90vh] overflow-hidden bg-gradient-to-br from-white to-indigo-50/30 border border-indigo-100 shadow-xl ">
+      <DialogHeader className="bg-gradient-to-r from-[#1A2A5B] to-[#142247] text-white p-4 rounded-t-lg mt-4">
           <DialogTitle className="text-2xl font-bold tracking-tight">Student Information</DialogTitle>
           <DialogDescription className="text-indigo-100 mt-2">
             Please complete all required fields in the registration form below to proceed with your enrollment.

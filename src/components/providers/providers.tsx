@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { ProfileProvider } from './profile-provider';
+import { HeaderProvider } from './header-provider';
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -10,8 +11,10 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <ProfileProvider>
-      {children}
-    </ProfileProvider>
+    <HeaderProvider>
+      <ProfileProvider>
+        {children}
+      </ProfileProvider>
+    </HeaderProvider>
   );
 }

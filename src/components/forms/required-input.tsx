@@ -86,6 +86,7 @@ export const RequiredFormField: React.FC<RequiredFormFieldProps> = ({
             )}
           />
         );
+
       case 'date':
         return (
           <Input

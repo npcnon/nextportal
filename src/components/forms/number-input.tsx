@@ -43,8 +43,18 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   const error = getNestedError(name);
   const registerProps = register(name, {
     onChange,
-    valueAsNumber: true, // Treat the input value as a number
+    valueAsNumber: true,
+    required: true, // Add required validation
+    validate: (value) => {
+      if (!value) return "This field is required";
+      if (isNaN(value)) return "Please enter a valid number";
+      if (value < 1900 || value > 2100) return "Please enter a valid year";
+      return true;
+    }
   });
+
+  // Check if the field has a valid value
+  const hasValue = fieldValue !== undefined && fieldValue !== null && !isNaN(fieldValue);
 
   return (
     <div className="space-y-2">
@@ -56,7 +66,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
               <div className="inline-flex">
                 <AlertCircle
                   className={`h-4 w-4 cursor-help ${
-                    fieldValue !== undefined ? "text-green-500" : "text-red-500"
+                    hasValue ? "text-green-500" : "text-red-500"
                   }`}
                   aria-label="This field is required"
                 />
@@ -72,13 +82,15 @@ export const NumberInput: React.FC<NumberInputProps> = ({
         id={name}
         {...registerProps}
         type="number"
-        defaultValue={defaultValue}
+        defaultValue={defaultValue || ''}
         className={`${
           error
             ? "border-red-500 focus:border-red-500 focus:ring-red-500"
             : "focus:border-primary focus:ring-primary"
         }`}
         placeholder={placeholder}
+        min={1900}
+        max={2100}
       />
       {error && (
         <span className="text-sm text-red-500">{error.message}</span>

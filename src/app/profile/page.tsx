@@ -28,13 +28,13 @@ useEffect(() => {
       setIsLoadingPicture(true);
       const response = await apiClient.get('/documents');
       const profileDoc = response.data.documents.find(
-        (doc: any) => doc.document_type === 'Profile Picture'
+        (doc: any) => doc.document_type === 'profile'
       );
       
       if (profileDoc?.temporary_url) {
         setProfilePicture({
           id: profileDoc.id,
-          type: 'Profile Picture',
+          type: 'profile',
           temporary_url: profileDoc.temporary_url
         });
       }
@@ -164,7 +164,7 @@ useEffect(() => {
               <h1 className="text-3xl font-bold text-white">
                 {student.f_name} {student.m_name} {student.l_name} {student.suffix}
               </h1>
-              <p className="text-blue-100 mt-1">Student ID: {profileData.student_id ? profileData.student_id: "NO ID YET"}</p>
+              <p className="text-blue-100 mt-1">Student ID: {profileData.student_id ? profileData.student_id: "N/A"}</p>
             </div>
           </div>
         </div>

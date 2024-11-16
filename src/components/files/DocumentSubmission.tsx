@@ -1,431 +1,348 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Upload, File, Check, X, Loader2, FileType } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Upload, X, FileCheck, AlertCircle, Eye, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from "@/components/ui/skeleton"; // Import your Skeleton component or create one
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from '@/lib/utils';
 import apiClient from '@/lib/axios';
+
+type DocumentType = 
+  | 'birth_certificate'
+  | 'form_137'
+  | 'transcript_of_records'
+  | 'high_school_diploma'
+  | 'good_moral'
+  | 'two_x_two_photo'
+  | 'certificate_of_transfer'
+  | 'medical_certificate'
+  | 'profile';
 
 interface Document {
   id: number;
-  document_type: string;
+  document_type: DocumentType;
+  file_type: string;
   status: 'pending' | 'approved' | 'rejected';
   filename: string;
   uploaded_at: string;
-  temporary_url: string;
-  expires_at: string;
+  temporary_url?: string;
+  expires_at?: string;
+  review_notes?: string;
 }
 
-interface UploadError {
-  documentType: string;
-  message: string;
+interface DocumentState {
+  [key: string]: Document | null;
 }
 
-interface UploadProgress {
-  [key: string]: number;
-}
+const DOCUMENT_LABELS: Record<DocumentType, string> = {
+  birth_certificate: 'Birth Certificate',
+  form_137: 'Form 137',
+  transcript_of_records: 'Transcript of Records',
+  high_school_diploma: 'High School Diploma',
+  good_moral: 'Certificate of Good Moral',
+  two_x_two_photo: '2x2 Photo',
+  certificate_of_transfer: 'Certificate of Transfer',
+  medical_certificate: 'Medical Certificate',
+  profile: 'Profile Picture'
+};
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
-const DocumentUploadManager = () => {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [uploading, setUploading] = useState<{ [key: string]: boolean }>({});
-  const [uploadProgress, setUploadProgress] = useState<UploadProgress>({});
-  const [uploadSpeeds, setUploadSpeeds] = useState<{ [key: string]: number }>({});
-  const [estimatedTimes, setEstimatedTimes] = useState<{ [key: string]: number }>({});
-  const [errors, setErrors] = useState<UploadError[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-  const uploadStartTimes = useRef<{ [key: string]: number }>({});
-
-  const documentTypes = [
-    { 
-      id: 'birth_certificate', 
-      label: 'Birth Certificate',
-      icon: <FileType className="w-5 h-5" />,
-      description: 'Upload your birth certificate (PDF, JPG, or PNG)',
-    },
-    { 
-      id: 'high_school_diploma', 
-      label: 'High School Diploma',
-      icon: <FileType className="w-5 h-5" />,
-      description: 'Upload your high school diploma (PDF, JPG, or PNG)',
-    },
-    { 
-      id: 'good_moral', 
-      label: 'Good Moral Certificate',
-      icon: <FileType className="w-5 h-5" />,
-      description: 'Upload your good moral certificate (PDF, JPG, or PNG)',
-    },
-    { 
-      id: 'medical_certificate', 
-      label: 'Medical Certificate',
-      icon: <FileType className="w-5 h-5" />,
-      description: 'Upload your medical certificate (PDF, JPG, or PNG)',
-    },
-    { 
-      id: 'profile', 
-      label: 'Profile Picture',
-      icon: <FileType className="w-5 h-5" />,
-      description: 'Upload your profile picture (JPG or PNG only)',
-    },
-  ];
-
-  const fetchDocuments = async () => {
-    try {
-      const response = await apiClient.get('/documents');
-      console.log(response.data)
-      setDocuments(response.data.documents || []);
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load documents",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+const DocumentSubmission = () => {
+  const [documents, setDocuments] = useState<DocumentState>({});
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const [isFetching, setIsFetching] = useState(true); // Add this for the fetching state
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewType, setPreviewType] = useState<'pdf' | 'image' | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
     fetchDocuments();
   }, []);
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const formatSpeed = (bytesPerSecond: number) => {
-    if (bytesPerSecond === 0) return '0 B/s';
-    const k = 1024;
-    const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
-    const i = Math.floor(Math.log(bytesPerSecond) / Math.log(k));
-    return parseFloat((bytesPerSecond / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const formatTime = (seconds: number) => {
-    if (seconds < 1) return 'less than a second';
-    if (seconds < 60) return `${Math.round(seconds)} seconds`;
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.round(seconds % 60);
-    return `${minutes}m ${remainingSeconds}s`;
-  };
-
-  const isDocumentUploaded = (documentType: string) => {
-    return documents.some(doc => 
-      doc.document_type.toLowerCase() === documentType.toLowerCase()
-    );
-  };
-
-  const handleFileUpload = async (file: File, documentType: string) => {
-    if (isDocumentUploaded(documentType)) {
-      toast({
-        title: "Error",
-        description: "This document has already been uploaded. Please contact support if you need to update it.",
-        variant: "destructive",
+  const fetchDocuments = async () => {
+    setIsFetching(true); // Set fetching to true
+    try {
+      const response = await apiClient.get('documents/');
+      const documentMap: DocumentState = {};
+      response.data.documents.forEach((doc: Document) => {
+        documentMap[doc.document_type] = doc;
       });
+      setDocuments(documentMap);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    } finally {
+      setIsFetching(false); // Fetching is done
+    }
+  };
+
+  const handleFileUpload = async (documentType: DocumentType, file: File) => {
+    if (documents[documentType]) {
+      setErrors(prev => ({
+        ...prev,
+        [documentType]: 'Document already submitted'
+      }));
       return;
     }
 
-    // File size validation
-    if (file.size > MAX_FILE_SIZE) {
-      toast({
-        title: "Error",
-        description: `File size exceeds ${formatFileSize(MAX_FILE_SIZE)}. Please upload a smaller file.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const allowedTypes = documentType === 'profile' 
-      ? ['image/jpeg', 'image/png']
-      : ['application/pdf', 'image/jpeg', 'image/png'];
-    
-    if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: "Error",
-        description: `Invalid file type. Please upload ${allowedTypes.join(' or ')}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setUploading(prev => ({ ...prev, [documentType]: true }));
+    setLoading(prev => ({ ...prev, [documentType]: true }));
+    setErrors(prev => ({ ...prev, [documentType]: '' }));
     setUploadProgress(prev => ({ ...prev, [documentType]: 0 }));
-    setErrors(prev => prev.filter(error => error.documentType !== documentType));
-    uploadStartTimes.current[documentType] = Date.now();
 
     const formData = new FormData();
     formData.append('file', file);
     formData.append('document_type', documentType);
 
-    let lastLoaded = 0;
-    let lastTime = Date.now();
+    try {
+      const response = await apiClient.post('upload/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(prev => ({ ...prev, [documentType]: percentCompleted }));
+          }
+        }
+      });
 
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
+      setDocuments(prev => ({
+        ...prev,
+        [documentType]: response.data
+      }));
       
-      xhr.upload.addEventListener('progress', (event) => {
-        if (event.lengthComputable) {
-          const currentTime = Date.now();
-          const timeDiff = (currentTime - lastTime) / 1000; // Convert to seconds
-          const loadedDiff = event.loaded - lastLoaded;
-          
-          if (timeDiff > 0) {
-            const currentSpeed = loadedDiff / timeDiff; // bytes per second
-            setUploadSpeeds(prev => ({ ...prev, [documentType]: currentSpeed }));
-            
-            // Calculate estimated time remaining
-            const remainingBytes = event.total - event.loaded;
-            const estimatedSeconds = remainingBytes / currentSpeed;
-            setEstimatedTimes(prev => ({ ...prev, [documentType]: estimatedSeconds }));
-          }
-          
-          lastLoaded = event.loaded;
-          lastTime = currentTime;
-          
-          const progress = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(prev => ({ ...prev, [documentType]: progress }));
-        }
-      });
-
-      xhr.addEventListener('load', async () => {
-
-        if (xhr.status === 401) {
-            // Access token has expired, try to refresh it
-            try {
-              const refreshToken = localStorage.getItem('refresh_token');
-              const response = await fetchRefreshToken(refreshToken);
-              localStorage.setItem('access_token', response.access_token);
-    
-              // Retry the original request with the new access token
-              return handleFileUpload(file, documentType);
-            } catch (error) {
-              // Refresh token has also expired, clear the auth tokens
-              clearAuthTokens();
-              reject(new Error('Refresh token expired. Please log in again.'));
-              return;
-            }
-          }
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const uploadDuration = (Date.now() - uploadStartTimes.current[documentType]) / 1000;
-          const averageSpeed = file.size / uploadDuration;
-          
-          try {
-            const response = JSON.parse(xhr.responseText);
-            await fetchDocuments();
-            toast({
-              title: "Success",
-              description: `Document uploaded successfully (${formatFileSize(file.size)} at ${formatSpeed(averageSpeed)})`,
-            });
-            resolve(response);
-          } catch (error) {
-            reject(new Error('Invalid response format'));
-          }
-        } else {
-          reject(new Error(xhr.responseText || 'Upload failed'));
-        }
-      });
-
-      xhr.addEventListener('error', () => {
-        const errorMessage = 'Network error occurred. Please check your connection and try again.';
-        reject(new Error(errorMessage));
-      });
-
-      xhr.addEventListener('abort', () => {
-        reject(new Error('Upload aborted'));
-      });
-
-      xhr.open('POST', 'http://127.0.0.1:8000/api/upload/');
-      xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('access_token')}`);
-      xhr.send(formData);
-    }).catch((error) => {
-      console.error('Upload error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-      setErrors(prev => [...prev, {
-        documentType,
-        message: errorMessage
-      }]);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }).finally(() => {
-      setUploading(prev => ({ ...prev, [documentType]: false }));
-      setUploadSpeeds(prev => ({ ...prev, [documentType]: 0 }));
-      setEstimatedTimes(prev => ({ ...prev, [documentType]: 0 }));
+      setUploadProgress(prev => ({ ...prev, [documentType]: 100 }));
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message || 'Upload failed';
+      setErrors(prev => ({
+        ...prev,
+        [documentType]: errorMessage
+      }));
+    } finally {
+      setLoading(prev => ({ ...prev, [documentType]: false }));
       setTimeout(() => {
         setUploadProgress(prev => ({ ...prev, [documentType]: 0 }));
       }, 1000);
-    });
-  };
-
-  const fetchRefreshToken = async (refreshToken: string | null) => {
-    const response = await fetch('http://127.0.0.1:8000/api/refresh-token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refresh: refreshToken }),
-    });
-  
-    if (response.ok) {
-      return response.json();
-    } else {
-      throw new Error('Failed to refresh access token');
     }
   };
-  
-  const clearAuthTokens = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'text-green-500';
+      case 'rejected':
+        return 'text-red-500';
+      default:
+        return 'text-yellow-500';
+    }
   };
 
-  if (loading) {
+  const handlePreview = (url: string, filename: string) => {
+    setPreviewUrl(url);
+    // Check file type based on extension
+    const isPdf = filename.toLowerCase().endsWith('.pdf');
+    setPreviewType(isPdf ? 'pdf' : 'image');
+    setIsPreviewOpen(true);
+  };
+  const renderSkeletonCard = (documentType: DocumentType) => (
+    <Card key={documentType} className="w-full max-w-md">
+      <CardHeader>
+        <Skeleton className="h-6 w-2/3 mb-2" /> {/* Title Skeleton */}
+        <Skeleton className="h-4 w-1/3" /> {/* Description Skeleton */}
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-32 w-full mb-4" /> {/* Placeholder for upload area */}
+        <Skeleton className="h-4 w-1/2 mb-2" />
+        <Skeleton className="h-4 w-1/3" />
+      </CardContent>
+    </Card>
+  );
+  const renderPreviewContent = () => {
+    if (!previewUrl) return null;
+
+    if (previewType === 'pdf') {
+      return (
+        <iframe
+          src={previewUrl}
+          className="w-full h-full"
+          style={{ display: 'block', border: 'none', margin: 0, padding: 0 }}
+          title="Document preview"
+        />
+      );
+    }
+
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center w-full h-full p-4 bg-black/10">
+        <img
+          src={previewUrl}
+          alt="Document preview"
+          className="max-w-full max-h-full object-contain"
+          style={{ margin: 'auto' }}
+        />
       </div>
     );
-  }
+  };
+
+  const renderDocumentCard = (documentType: DocumentType) => {
+    const document = documents[documentType];
+    const isLoading = loading[documentType];
+    const error = errors[documentType];
+    const progress = uploadProgress[documentType];
+
+    return (
+      <Card key={documentType} className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">
+            {DOCUMENT_LABELS[documentType]}
+          </CardTitle>
+          <CardDescription>
+            {document ? (
+              <span className={cn("flex items-center gap-2", getStatusColor(document.status))}>
+                <FileCheck className="w-4 h-4" />
+                {document.status.charAt(0).toUpperCase() + document.status.slice(1)}
+              </span>
+            ) : (
+              "Please upload your document"
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {document ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Filename:</span>
+                <span className="font-medium">{document.filename}</span>
+              </div>
+              
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Uploaded:</span>
+                <span className="font-medium">
+                  {new Date(document.uploaded_at).toLocaleDateString()}
+                </span>
+              </div>
+
+              {document.review_notes && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Notes:</span>
+                  <p className="mt-1 text-sm">{document.review_notes}</p>
+                </div>
+              )}
+
+              {document.temporary_url && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => handlePreview(document.temporary_url!, document.filename)}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Document
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div>
+              <input
+                type="file"
+                id={`file-${documentType}`}
+                className="hidden"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileUpload(documentType, file);
+                }}
+                disabled={isLoading}
+              />
+              
+              <label
+                htmlFor={`file-${documentType}`}
+                className={cn(
+                  "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer",
+                  "hover:bg-muted/50 transition-colors",
+                  isLoading && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                {isLoading ? (
+                  <div className="flex flex-col items-center">
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    <span className="mt-2 text-sm">Uploading...</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Upload className="w-6 h-6" />
+                    <span className="mt-2 text-sm">Click to upload</span>
+                  </div>
+                )}
+              </label>
+
+              {progress > 0 && progress < 100 && (
+                <Progress value={progress} className="mt-4" />
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
-    <div className="w-full max-w-5xl mx-auto p-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Required Documents</h2>
-        <p className="text-gray-600">Please upload all required documents in PDF, JPG, or PNG format</p>
-      </div>
+    <div className="container mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">Document Submission</h1>
       
-      <div className="grid grid-cols-1 gap-6">
-        {documentTypes.map(({ id, label, icon, description }) => {
-          const isUploaded = isDocumentUploaded(label);
-          console.log(`isuploaded:${isUploaded}`)
-          const isCurrentlyUploading = uploading[id];
-          const progress = uploadProgress[id] || 0;
-          const speed = uploadSpeeds[id] || 0;
-          const estimatedTime = estimatedTimes[id] || 0;
-          const error = errors.find(e => e.documentType === id);
-          const uploadedDoc = documents.find(doc => 
-            doc.document_type.toLowerCase() === label.toLowerCase()
-          );
+      {isFetching ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {(Object.keys(DOCUMENT_LABELS) as DocumentType[]).map(renderSkeletonCard)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {(Object.keys(DOCUMENT_LABELS) as DocumentType[]).map(renderDocumentCard)}
+        </div>
+      )}
 
-          return (
-            <Card key={id} className={`transition-all duration-200 ${
-              isUploaded ? 'bg-green-50 border-green-200' : 'hover:shadow-md'
-            }`}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-4">
-                      <div className={`p-2 rounded-full ${
-                        isUploaded ? 'bg-green-100' : 'bg-gray-100'
-                      }`}>
-                        {isUploaded ? (
-                          <Check className="w-6 h-6 text-green-600" />
-                        ) : (
-                          icon
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{label}</h3>
-                        <p className="text-sm text-gray-600 mt-1">{description}</p>
-                        {uploadedDoc && (
-                          <div className="mt-2">
-                            <p className="text-sm text-gray-500">
-                              Uploaded: {uploadedDoc.filename}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Status: <span className="capitalize">{uploadedDoc.status}</span>
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent
+          className={cn(
+            "p-0 gap-0 overflow-auto",
+            previewType === 'pdf' ? "max-w-[95vw] w-full h-[95vh]" : "max-w-[90vw] max-h-[90vh]"
+          )}
+        >
+          <div className={cn("flex flex-col h-full")}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <DialogTitle className="text-lg font-semibold">
+                Document Preview
+              </DialogTitle>
+            </div>
 
-                    {isCurrentlyUploading && (
-                      <div className="mt-4 space-y-2">
-                        <Progress value={progress} className="h-2" />
-                        <div className="flex justify-between text-sm text-gray-500">
-                          <span>Uploading... {formatSpeed(speed)}</span>
-                          <span>{progress}% • {estimatedTime > 0 ? `${formatTime(estimatedTime)} remaining` : 'Calculating...'}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {error && (
-                      <Alert variant="destructive" className="mt-4">
-                        <AlertDescription className="text-sm">
-                          {error.message}
-                        </AlertDescription>
-                      </Alert>
-                    )}
-
-                    {uploadedDoc && (
-                      <div className="mt-4">
-                        <a
-                          href={uploadedDoc.temporary_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center space-x-2 text-primary hover:text-primary/80 text-sm font-medium"
-                        >
-                          <FileType className="w-4 h-4" />
-                          <span>View Document</span>
-                        </a>
-                      </div>
-                    )}
-
-                    {!isUploaded && !isCurrentlyUploading && (
-                      <p className="text-sm text-gray-500 mt-2">
-                        Maximum file size: {formatFileSize(MAX_FILE_SIZE)}
-                      </p>
-                    )}
-                  </div>
-
-                  {!isUploaded && (
-                    <label className="relative cursor-pointer">
-                      <input
-                        type="file"
-                        className="sr-only"
-                        accept={id === 'profile' ? '.jpg,.jpeg,.png' : '.pdf,.jpg,.jpeg,.png'}
-                        disabled={isCurrentlyUploading}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, id);
-                        }}
-                      />
-                      <div className={`flex items-center justify-center px-6 py-3 rounded-lg text-sm font-medium transition-colors ${
-                        isCurrentlyUploading
-                          ? 'bg-gray-100 text-gray-400'
-                          : 'bg-primary text-white hover:bg-primary/90'
-                      }`}>
-                        {isCurrentlyUploading ? (
-                          <div className="flex items-center space-x-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Uploading...</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-2">
-                            <Upload className="w-4 h-4" />
-                            <span>Upload</span>
-                          </div>
-                        )}
-                      </div>
-                    </label>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+            {/* Content */}
+            <div
+              className={cn(
+                "flex-1 overflow-auto p-4",
+                previewType === 'pdf' ? "min-h-0" : "h-auto"
+              )}
+            >
+              {renderPreviewContent()}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-export default DocumentUploadManager;
+export default DocumentSubmission;
