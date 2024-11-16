@@ -110,17 +110,17 @@ export const SubjectEnlistment = () => {
   } = useFullDataStore();
   const profileData = useStudentProfileStore(state => state.profileData);
   const { program, year_level, semester_entry } = academic_background[0];
-
+  useEffect(() => {
+    if (academic_background?.[0]) {
+      fetchSchedules();
+    }
+  }, [academic_background]);
+  if (!academic_background?.[0]) return;
+  
+  setFetchingSchedules(true);
+  
   const fetchSchedules = async () => {
-    useEffect(() => {
-      if (academic_background?.[0]) {
-        fetchSchedules();
-      }
-    }, [academic_background]);
-    if (!academic_background?.[0]) return;
-    
-    setFetchingSchedules(true);
-    
+
     
     try {
       const semester_response = await apiClient.get(`/semester/?campus_id=${profileData.profile.student_info.campus}`);
