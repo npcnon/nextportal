@@ -84,12 +84,6 @@ export const DashboardHeader = () => {
       icon: <GraduationCap className="w-5 h-5 text-[#ff8a47]" />, 
       description: 'Explore campus activities',
     },
-    {
-      name: 'Chats',
-      path: '/chats',
-      icon: <Users className="w-5 h-5 text-[#ff8a47]" />, 
-      description: 'Message your classmates',
-    }
   ];
   
 
