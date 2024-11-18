@@ -30,7 +30,7 @@ export class AuthenticationError extends Error {
   }
 }
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/'
+const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://djangoportal-backends.onrender.com/api/'
 
 const DEFAULT_TIMEOUT = 15000 // 15 seconds
 

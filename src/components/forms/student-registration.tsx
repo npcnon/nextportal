@@ -1628,7 +1628,7 @@ const StudentRegistrationForm: React.FC = () => {
 const handleFormSubmit = async (data: StudentFormData) => {
     setIsSubmitting(true);
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/full-student-data/', data);
+      const response = await axios.post('https://djangoportal-backends.onrender.com/api/full-student-data/', data);
       
       toast({
         title: "Success!",
@@ -1742,7 +1742,7 @@ const handleFormSubmit = async (data: StudentFormData) => {
 
       setIsSubmitting(true);
       const response = await axios.post(
-        'http://127.0.0.1:8000/api/full-student-data/', 
+        'https://djangoportal-backends.onrender.com/api/full-student-data/', 
         currentValues
       );
       

@@ -176,7 +176,7 @@ export const useFullDataStore = create<StudentState & StudentActions>((set, get)
       set({ isLoading: true, error: null });
       
       const response = await apiClient.get(
-        `http://127.0.0.1:8000/api/full-student-data/?filter=fulldata_applicant_id=${fullDataApplicantId}`
+        `https://djangoportal-backends.onrender.com/api/full-student-data/?filter=fulldata_applicant_id=${fullDataApplicantId}`
       );
       
       const data = await response.data;

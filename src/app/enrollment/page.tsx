@@ -120,7 +120,7 @@ export default function EnrollmentForm() {
     setIsVerifyingEmail(true)
     try {
       // Replace with your actual API endpoint
-      const response = await axios.post('http://127.0.0.1:8000/api/emailapi', {
+      const response = await axios.post('https://djangoportal-backends.onrender.com/api/emailapi', {
         email: formData.email
       })
       
@@ -150,7 +150,7 @@ export default function EnrollmentForm() {
   const handleVerificationCodeSubmit = async () => {
     setIsVerifyingCode(true)
     try {
-      const response = await axios.put('http://127.0.0.1:8000/api/emailapi', {
+      const response = await axios.put('https://djangoportal-backends.onrender.com/api/emailapi', {
         email: formData.email,
         verification_code: formData.email_verification_code
       })
@@ -240,7 +240,7 @@ const handleSubmit = async () => {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/stdntbasicinfo/', formData);
+      const response = await axios.post('https://djangoportal-backends.onrender.com/api/stdntbasicinfo/', formData);
       if (response.status === 201) {
         setIsSubmitted(true);
         
