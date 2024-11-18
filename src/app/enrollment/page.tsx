@@ -93,7 +93,10 @@ export default function EnrollmentForm() {
   const [isConfirming, setIsConfirming] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoadingPrograms, setIsLoadingPrograms] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
+
+
   const [formData, setFormData] = useState({
     first_name: '',
     middle_name: '',
@@ -103,8 +106,8 @@ export default function EnrollmentForm() {
     year_level: '',
     contact_number: '',
     address: '',
-    campus: '1',
-    program: '1',
+    campus: '',
+    program: '',
     birth_date: '',
     sex: '',
     email: '',
@@ -115,31 +118,13 @@ export default function EnrollmentForm() {
     router.push(path)
   }
 
-  useEffect(() => {
-    const fetchPrograms = async () => {
-      try {
-        const response = await unauthenticatedApiClient.get(`program/?campus_id=${formData.campus}`)
-        setPrograms(response.data.results)
-      } catch (error) {
-        console.error('Failed to fetch programs:', error)
-        toast({
-          title: "Error",
-          description: "Failed to load programs. Please try again.",
-          variant: "destructive",
-          className: "bg-red-500 text-white border-none shadow-none",
 
-        })
-      }
-    }
-  
-    fetchPrograms()
-  }, [formData.campus]) // This will refetch programs when campus changes
 
   const handleEmailVerification = async () => {
     setIsVerifyingEmail(true)
     try {
       // Replace with your actual API endpoint
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}api/emailapi`, {
+      const response = await unauthenticatedApiClient.post(`emailapi`, {
         email: formData.email
       })
       
@@ -201,26 +186,60 @@ export default function EnrollmentForm() {
   const yearLevels = ['First Year', 'Second Year', 'Third Year', 'Fourth Year']
   const sexOptions = ['Male', 'Female']
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target
+  const handleChange = async (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type } = e.target;
   
     // Clear any existing errors for this field
-    setErrors(prev => ({
+    setErrors((prev) => ({
       ...prev,
-      [name]: undefined
-    }))
+      [name]: undefined,
+    }));
   
-    setFormData(prev => ({
+    // Update form data
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }))
+      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+    }));
+  
+    if (name === "campus") {
+      setPrograms([]); // Clear previous programs
+      setIsLoadingPrograms(true); // Add loading indicator
+      formData.program = ""
+      try {
+        const response = await unauthenticatedApiClient.get(`program/?campus_id=${value}`);
+        const fetchedPrograms = response.data.results;
+  
+        setPrograms(fetchedPrograms);
+        if (fetchedPrograms.length === 0) {
+          toast({
+            title: "No Programs Found",
+            description: "No programs are available for the selected campus.",
+            variant: "default",
+            className: "bg-blue-500 text-white border-none shadow-none",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch programs:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load programs. Please try again.",
+          variant: "destructive",
+          className: "bg-red-500 text-white border-none shadow-none",
+        });
+      } finally {
+        setIsLoadingPrograms(false);
+      }
+    }
 
-    // Update selectedProgram when program changes
-    if (name === 'program' && value) {
+     // Update selectedProgram when program changes
+     if (name === 'program' && value) {
       const program = programs.find(p => p.id.toString() === value);
       setSelectedProgram(program || null);
     }
-  }
+  };
+  
 
 // Main submit handler
 const handleSubmit = async () => {
@@ -852,25 +871,40 @@ const ConfirmationDialog = () => (
           <label className="block text-sm font-medium text-gray-700">
             Program
           </label>
-          <select
-            required
-            name="program"
-            value={formData.program}
-            onChange={handleChange}
-            className={`
-              w-full bg-white p-2.5 rounded-md
-              border border-gray-300 shadow-sm
-              focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
-              ${errors.program ? 'border-red-500 focus:border-red-500' : ''}
-            `}
-          >
-            <option value="" disabled>Please select a program</option>
-            {programs.map(program => (
-              <option key={program.id} value={program.id}>
-                {program.description}
+          <div className="relative">
+            <select
+              required
+              name="program"
+              value={formData.program}
+              onChange={handleChange}
+              className={`
+                w-full bg-white p-2.5 rounded-md
+                border border-gray-300 shadow-sm
+                focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
+                ${errors.program ? 'border-red-500 focus:border-red-500' : ''}
+              `}
+            >
+              <option value="" disabled>
+                {isLoadingPrograms ? "" : "Select a program"}
               </option>
-            ))}
-          </select>
+              {programs.map(program => (
+                <option
+                  key={program.id}
+                  value={program.id}
+                  title={program.description}
+                >
+                  {program.code}
+                </option>
+              ))}
+            </select>
+            
+            {isLoadingPrograms && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+              </div>
+            )}
+          </div>
+
           {errors.program && (
             <motion.p 
               initial={{ opacity: 0, y: -10 }}
@@ -881,6 +915,7 @@ const ConfirmationDialog = () => (
             </motion.p>
           )}
         </div>
+
   
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">

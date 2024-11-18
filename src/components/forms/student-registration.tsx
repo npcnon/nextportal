@@ -1057,18 +1057,6 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
     setSemesterName(selectedSemester?.semester_name || '')
     }, [formData.academic_background.semester_entry]);
 
-  if (isLoading) {
-    return (
-      <Card className="border-0 shadow-none">
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-center p-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
 
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 10 }, (_, i) => ({
@@ -1653,123 +1641,7 @@ const handleFormSubmit = async (data: StudentFormData) => {
     }
   };
 
-  // Create the submit handler
-  const validateAndSwitchTab = async () => {
-    const errors = methods.formState.errors;
-    console.log('Current form data:', methods.getValues());
-    console.log('Validation errors:', errors);
-    
-    // Log specific section errors
-    if (errors.personal_data) {
-      console.log('Personal data errors:', errors.personal_data);
-      setActiveTab("personal");
-    }
-    if (errors.add_personal_data) {
-      console.log('Contact info errors:', errors.add_personal_data);
-      setActiveTab("contact");
-    }
-    if (errors.family_background) {
-      console.log('Family background errors:', errors.family_background);
-      setActiveTab("family");
-    }
-    if (errors.academic_background || errors.academic_history) {
-      console.log('Academic errors:', {
-        background: errors.academic_background,
-        history: errors.academic_history
-      });
-      setActiveTab("academic");
-    }
 
-    const formState = methods.formState;
-    console.log('Form State:', {
-      isDirty: formState.isDirty,
-      isSubmitting: formState.isSubmitting,
-      isValid: formState.isValid,
-      submitCount: formState.submitCount
-    });
-
-    // Try manual validation
-    const isValid = await methods.trigger();
-    console.log('Manual validation result:', isValid);
-
-    if (Object.keys(errors).length > 0) {
-      // Show which fields are invalid
-      const invalidFields = Object.entries(methods.getValues())
-        .map(([key, value]) => ({
-          field: key,
-          value: value,
-          hasError: errors[key as keyof typeof errors] !== undefined
-        }));
-      console.log('Field validation status:', invalidFields);
-
-      toast({
-        title: "Validation Error",
-        description: (
-          <div className="space-y-2">
-            <p>Please check the following sections:</p>
-            <ul className="list-disc pl-4">
-              {errors.personal_data && <li>Personal Information</li>}
-              {errors.add_personal_data && <li>Contact Information</li>}
-              {errors.family_background && <li>Family Background</li>}
-              {errors.academic_background && <li>Academic Background</li>}
-              {errors.academic_history && <li>Academic History</li>}
-            </ul>
-          </div>
-        ),
-        variant: "destructive",
-      });
-      return false;
-    }
-    return true;
-  };
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Form submission started');
-    
-    // Log current form values
-    const currentValues = methods.getValues();
-    console.log('Current form values:', currentValues);
-    
-    try {
-      const isValid = await validateAndSwitchTab();
-      console.log('Validation result:', isValid);
-      
-      if (!isValid) {
-        console.log('Validation failed, stopping submission');
-        return;
-      }
-
-      setIsSubmitting(true);
-      const response = await apiClient.post(
-        'full-student-data/', 
-        currentValues
-      );
-      
-      console.log('Submission response:', response);
-      
-      toast({
-        title: "Success!",
-        description: "Your registration has been submitted successfully.",
-        variant: "default",
-      });
-      setTimeout(() => {
-        window.location.href = window.location.href;
-        // OR
-        // window.location.replace(window.location.href);
-      }, 1500);
-      methods.reset(initialFormState);
-    } catch (error) {
-      console.error("Submission error:", error);
-      toast({
-        title: "Error",
-        description: "There was a problem submitting your registration. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   if (isLoading) {
     return (

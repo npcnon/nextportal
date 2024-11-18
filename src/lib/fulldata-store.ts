@@ -227,17 +227,16 @@ export const useFullDataStore = create<StudentState & StudentActions>((set, get)
   updatePersonalData: async (data) => {
     try {
       set({ isLoading: true, error: null });
-      const response = await fetch('/api/student-data', {
-        method: 'PUT',
+      const response = await apiClient.put('/api/student-data', {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: data,
       });
       
-      if (!response.ok) throw new Error('Failed to update personal data');
+      if (!response.data.ok) throw new Error('Failed to update personal data');
       
-      const updatedData = await response.json();
+      const updatedData = await response.data;
       set({ personal_data: [updatedData], isLoading: false });
     } catch (error) {
       set({ error: 'Failed to update personal data', isLoading: false });
