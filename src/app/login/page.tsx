@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import apiClient, { clearAuthTokens } from "@/lib/axios"
+import apiClient, { clearAuthTokens } from "@/lib/clients/authenticated-api-client"
 import { useStudentProfileStore } from "@/lib/profile-store"
+import unauthenticatedApiClient from "@/lib/clients/unauthenticated-api-client"
 
 const formSchema = z.object({
   identifier: z.string().min(1, "Username or email is required"),
@@ -53,7 +54,7 @@ function LoginPageContent() {
       // Clear existing tokens before attempting login
       clearAuthTokens()
       console.log(`identifier: ${values.identifier}, password:${values.password}`)
-      const response = await apiClient.post('/login', {
+      const response = await unauthenticatedApiClient.post('login', {
         identifier: values.identifier,
         password: values.password,
       })
@@ -61,7 +62,7 @@ function LoginPageContent() {
       localStorage.setItem('access_token', response.data.access_token)
       localStorage.setItem('refresh_token', response.data.refresh_token)
 
-      const userResponse = await apiClient.get("/user")
+      const userResponse = await apiClient.get("user")
       setProfile(userResponse.data);
       console.log(userResponse.data);
       // Handle user data storage here (e.g., using a state management solution)

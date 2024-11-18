@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
-import apiClient from '@/lib/axios';
+import apiClient from '@/lib/clients/authenticated-api-client';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 
 type DocumentType = 

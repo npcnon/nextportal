@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { WifiOff, AlertCircle } from 'lucide-react';
-import { NetworkError, AuthenticationError } from '@/lib/axios';
+import { NetworkError, AuthenticationError } from '@/lib/clients/authenticated-api-client';
 import { useRouter } from 'next/navigation';
 
 export function useErrorHandler(maxRetries: number = 3) {

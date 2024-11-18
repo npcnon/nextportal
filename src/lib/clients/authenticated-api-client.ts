@@ -30,7 +30,7 @@ export class AuthenticationError extends Error {
   }
 }
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://djangoportal-backends.onrender.com/api/'
+const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL
 
 const DEFAULT_TIMEOUT = 15000 // 15 seconds
 
@@ -176,5 +176,12 @@ export const clearAuthTokens = (): void => {
   localStorage.removeItem('access_token')
   localStorage.removeItem('refresh_token')
 }
+
+
+
+
+
+
+
 
 export default apiClient

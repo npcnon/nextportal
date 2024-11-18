@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RequiredFormField } from './required-input';
 import useDebounce from '@/hooks/use-debounce';
 import { NumberInput } from './number-input';
-import apiClient from '@/lib/axios';
+import apiClient from '@/lib/clients/authenticated-api-client';
 import router from 'next/router';
 
 interface Program {
@@ -342,8 +342,8 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
     setIsLoading(true);
     try {
       const [programsResponse, semestersResponse] = await Promise.all([
-        apiClient.get(`/program/?campus_id=${campus}`),
-        apiClient.get(`/semester/?campus_id=${campus}`),
+        apiClient.get(`program/?campus_id=${campus}`),
+        apiClient.get(`semester/?campus_id=${campus}`),
       ]);
 
       setPrograms(programsResponse.data.results);
@@ -1628,7 +1628,7 @@ const StudentRegistrationForm: React.FC = () => {
 const handleFormSubmit = async (data: StudentFormData) => {
     setIsSubmitting(true);
     try {
-      const response = await axios.post('https://djangoportal-backends.onrender.com/api/full-student-data/', data);
+      const response = await apiClient.post('full-student-data/', data);
       
       toast({
         title: "Success!",
@@ -1741,8 +1741,8 @@ const handleFormSubmit = async (data: StudentFormData) => {
       }
 
       setIsSubmitting(true);
-      const response = await axios.post(
-        'https://djangoportal-backends.onrender.com/api/full-student-data/', 
+      const response = await apiClient.post(
+        'full-student-data/', 
         currentValues
       );
       

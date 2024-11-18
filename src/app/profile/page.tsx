@@ -8,7 +8,7 @@ import { Loading } from '@/components/ui/loading';
 import { Mail, Phone, Map, User, Calendar, Book, School, Home } from 'lucide-react';
 import { useStudentProfileStore } from '@/lib/profile-store';
 import { useToast } from '@/hooks/use-toast';
-import apiClient, { AuthenticationError } from '@/lib/axios';
+import apiClient, { AuthenticationError } from '@/lib/clients/authenticated-api-client';
 
 export default function StudentProfile(){
 
@@ -26,7 +26,7 @@ useEffect(() => {
   const fetchProfilePicture = async () => {
     try {
       setIsLoadingPicture(true);
-      const response = await apiClient.get('/documents');
+      const response = await apiClient.get('documents');
       const profileDoc = response.data.documents.find(
         (doc: any) => doc.document_type === 'profile'
       );

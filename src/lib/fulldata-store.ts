@@ -1,6 +1,6 @@
 // lib/fulldata-store.ts
 import { create } from 'zustand'
-import apiClient from './axios';
+import apiClient from './clients/authenticated-api-client';
 import axios from 'axios';
 import { useStudentProfileStore } from './profile-store';
 
@@ -176,7 +176,7 @@ export const useFullDataStore = create<StudentState & StudentActions>((set, get)
       set({ isLoading: true, error: null });
       
       const response = await apiClient.get(
-        `https://djangoportal-backends.onrender.com/api/full-student-data/?filter=fulldata_applicant_id=${fullDataApplicantId}`
+        `full-student-data/?filter=fulldata_applicant_id=${fullDataApplicantId}`
       );
       
       const data = await response.data;

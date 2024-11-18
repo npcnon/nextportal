@@ -20,9 +20,10 @@ import {
 import { AlertCircle, ArrowRight, CheckCircle, CheckSquare, CircleUserRound, GraduationCap, Loader2, Mail, Shield, Sparkles, Star, User, X } from 'lucide-react'
 import { z } from 'zod'
 import { Textarea } from '@/components/ui/textarea'
-import apiClient from '@/lib/axios'
+import apiClient from '@/lib/clients/authenticated-api-client'
 import { motion } from 'framer-motion'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
+import unauthenticatedApiClient from '@/lib/clients/unauthenticated-api-client'
 
 // Mock data for programs and campuses
 
@@ -117,7 +118,7 @@ export default function EnrollmentForm() {
   useEffect(() => {
     const fetchPrograms = async () => {
       try {
-        const response = await apiClient.get(`/program/?campus_id=${formData.campus}`)
+        const response = await unauthenticatedApiClient.get(`program/?campus_id=${formData.campus}`)
         setPrograms(response.data.results)
       } catch (error) {
         console.error('Failed to fetch programs:', error)
@@ -138,7 +139,7 @@ export default function EnrollmentForm() {
     setIsVerifyingEmail(true)
     try {
       // Replace with your actual API endpoint
-      const response = await axios.post('https://djangoportal-backends.onrender.com/api/emailapi', {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}api/emailapi`, {
         email: formData.email
       })
       
@@ -168,7 +169,7 @@ export default function EnrollmentForm() {
   const handleVerificationCodeSubmit = async () => {
     setIsVerifyingCode(true)
     try {
-      const response = await axios.put('https://djangoportal-backends.onrender.com/api/emailapi', {
+      const response = await unauthenticatedApiClient.put('emailapi', {
         email: formData.email,
         verification_code: formData.email_verification_code
       })
@@ -240,7 +241,7 @@ const handleSubmit = async () => {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post('https://djangoportal-backends.onrender.com/api/stdntbasicinfo/', formData);
+      const response = await unauthenticatedApiClient.post('stdntbasicinfo/', formData);
       if (response.status === 201) {
         setIsSubmitted(true);
         

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStudentProfileStore } from '@/lib/profile-store';
 import { useFullDataStore } from '@/lib/fulldata-store';
-import apiClient, { AuthenticationError, NetworkError } from '@/lib/axios';
+import apiClient, { AuthenticationError, NetworkError } from '@/lib/clients/authenticated-api-client';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { WifiOff, AlertCircle } from 'lucide-react';
@@ -45,7 +45,7 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
           throw new AuthenticationError('Please log in to access your dashboard');
         }
 
-        const userResponse = await apiClient.get("/user");
+        const userResponse = await apiClient.get("user");
         setProfile(userResponse.data);
         await fetchStudentData(profileData.fulldata_applicant_id);
         setRetryCount(0);

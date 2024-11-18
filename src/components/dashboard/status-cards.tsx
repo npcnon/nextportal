@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import apiClient, { AuthenticationError } from '@/lib/axios';
+import apiClient, { AuthenticationError } from '@/lib/clients/authenticated-api-client';
 import { useFullDataStore } from '@/lib/fulldata-store';
 import { cn } from "@/lib/utils";
 import { FiCheckCircle, FiAlertCircle, FiFileText, FiBookOpen } from 'react-icons/fi';
@@ -57,7 +57,7 @@ export const StatusCards: React.FC = () => {
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/documents');
+      const response = await apiClient.get('documents');
       setDocuments(response.data.documents || []);
     } catch (error) {
       console.error('Error fetching documents:', error);

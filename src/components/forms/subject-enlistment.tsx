@@ -14,7 +14,7 @@ import axios from 'axios';
 import { useFullDataStore } from '@/lib/fulldata-store';
 import { useStudentProfileStore } from '@/lib/profile-store';
 import { Loader2, RefreshCw } from "lucide-react";
-import apiClient from '@/lib/axios';
+import apiClient from '@/lib/clients/authenticated-api-client';
 import { BookOpenCheck } from "lucide-react"; 
 interface Program {
   id: number
@@ -124,18 +124,18 @@ export const SubjectEnlistment = () => {
       return null;
     }
 
-    
+
   const fetchSchedules = async () => {
     setFetchingSchedules(true);
     let retries = 3;
     
     while (retries > 0) {
       try {
-        const semester_response = await apiClient.get(`/semester/?campus_id=${profileData.profile.student_info.campus}`);
+        const semester_response = await apiClient.get(`semester/?campus_id=${profileData.profile.student_info.campus}`);
         const semesters = semester_response.data.results;
         setSemester(semesters);
   
-        const response = await apiClient.get(`/schedules/`, {
+        const response = await apiClient.get(`schedules/`, {
           params: {
             program_id: program,
             year_level: year_level,
@@ -197,7 +197,7 @@ export const SubjectEnlistment = () => {
 
     setLoading(true);
     try {
-      await axios.post('https://djangoportal-backends.onrender.com/api/schedules/', {
+      await apiClient.post('schedules/', {
         fulldata_applicant_id: applicant_id,
         class_ids: selectedSubjects
       });
@@ -207,7 +207,7 @@ export const SubjectEnlistment = () => {
         description: "Successfully submitted enlistment!",
       });
     
-      await axios.post('https://djangoportal-backends.onrender.com/api/enlisted-students/', {
+      await apiClient.post('enlisted-students/', {
         fulldata_applicant_id: applicant_id,
         semester_id: semester_entry
       });

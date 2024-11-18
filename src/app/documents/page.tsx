@@ -27,11 +27,11 @@ const UploadPage = () => {
   const handleError = (error: any) => {
     console.error('Upload failed:', error);
   };
-
+    const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}api/admin-documents/`
   return (
     <div className="container mx-auto py-8">
       <DocumentUpload 
-        apiUrl="https://djangoportal-backends.onrender.com/api/admin-documents/"  
+        apiUrl=""  
         onSuccess={handleSuccess}
         onError={handleError}
       />

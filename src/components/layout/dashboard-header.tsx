@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { useStudentProfileStore } from '@/lib/profile-store';
-import apiClient, { AuthenticationError, clearAuthTokens } from '@/lib/axios';
+import apiClient, { AuthenticationError, clearAuthTokens } from '@/lib/clients/authenticated-api-client';
 import { useToast } from '@/hooks/use-toast';
 import { useHeader } from '../providers/header-provider';
 
@@ -96,7 +96,7 @@ export const DashboardHeader = () => {
     const fetchProfilePicture = async () => {
       try {
         setIsLoadingPicture(true);
-        const response = await apiClient.get('/documents');
+        const response = await apiClient.get('documents');
         const profileDoc = response.data.documents.find((doc: any) => doc.document_type === 'profile');
         
         if (profileDoc?.temporary_url) {
@@ -133,7 +133,7 @@ export const DashboardHeader = () => {
       const refreshToken = localStorage.getItem('refresh_token');
       
       try {
-        await apiClient.post('/logout', {
+        await apiClient.post('logout', {
           refresh_token: refreshToken
         });
       } catch (error) {
