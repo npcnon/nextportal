@@ -47,13 +47,6 @@ interface TabContentProps {
 // Mounted Components with TypeScript
 const MountedComponents = {
   Enlistment: ({ show, personal_data }: MountedComponentProps) => {
-    
-    useEffect(() => {
-      if (personal_data && personal_data.length > 0 && 
-          personal_data[0].status === 'initially enrolled') {
-        // Your fetch logic here
-      }
-    }, []); // Empty dependency array
 
     return (
       <div style={{ display: show ? 'block' : 'none' }}>
@@ -67,14 +60,6 @@ const MountedComponents = {
   },
 
   Requirements: ({ show, personal_data }: MountedComponentProps) => {
-    const [data, setData] = useState<any>(null); // Replace 'any' with your actual data type
-    
-    useEffect(() => {
-      if (personal_data && personal_data.length > 0 && 
-          personal_data[0].status === 'initially enrolled') {
-        // Your fetch logic here
-      }
-    }, []); // Empty dependency array
 
     return (
       <div style={{ display: show ? 'block' : 'none' }}>

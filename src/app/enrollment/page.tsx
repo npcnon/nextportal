@@ -114,7 +114,25 @@ export default function EnrollmentForm() {
     router.push(path)
   }
 
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        const response = await apiClient.get(`/program/?campus_id=${formData.campus}`)
+        setPrograms(response.data.results)
+      } catch (error) {
+        console.error('Failed to fetch programs:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load programs. Please try again.",
+          variant: "destructive",
+          className: "bg-red-500 text-white border-none shadow-none",
+
+        })
+      }
+    }
   
+    fetchPrograms()
+  }, [formData.campus]) // This will refetch programs when campus changes
 
   const handleEmailVerification = async () => {
     setIsVerifyingEmail(true)
@@ -177,25 +195,7 @@ export default function EnrollmentForm() {
     }
   }
   
-  useEffect(() => {
-    const fetchPrograms = async () => {
-      try {
-        const response = await apiClient.get(`/program/?campus_id=${formData.campus}`)
-        setPrograms(response.data.results)
-      } catch (error) {
-        console.error('Failed to fetch programs:', error)
-        toast({
-          title: "Error",
-          description: "Failed to load programs. Please try again.",
-          variant: "destructive",
-          className: "bg-red-500 text-white border-none shadow-none",
 
-        })
-      }
-    }
-  
-    fetchPrograms()
-  }, [formData.campus]) // This will refetch programs when campus changes
 //TODO: add email verification
   const yearLevels = ['First Year', 'Second Year', 'Third Year', 'Fourth Year']
   const sexOptions = ['Male', 'Female']

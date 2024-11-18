@@ -110,13 +110,21 @@ export const SubjectEnlistment = () => {
   } = useFullDataStore();
   const profileData = useStudentProfileStore(state => state.profileData);
   
-  // Return early if no academic background
-  if (!academic_background?.[0]) {
-    return null;
-  }
+
 
   const { program, year_level, semester_entry } = academic_background[0];
+  useEffect(() => {
+    if (academic_background?.[0]) {
+      fetchSchedules();
+    }
+  }, [academic_background, program, year_level, semester_entry]);
 
+    // Return early if no academic background
+    if (!academic_background?.[0]) {
+      return null;
+    }
+
+    
   const fetchSchedules = async () => {
     setFetchingSchedules(true);
     let retries = 3;
@@ -157,11 +165,7 @@ export const SubjectEnlistment = () => {
   };
 
   
-  useEffect(() => {
-    if (academic_background?.[0]) {
-      fetchSchedules();
-    }
-  }, [academic_background, program, year_level, semester_entry]);
+
 
   const handleSelectSubject = (scheduleId: number) => {
     setSelectedSubjects(prev => 
