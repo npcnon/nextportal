@@ -15,7 +15,7 @@ import { useFullDataStore } from '@/lib/fulldata-store';
 import { useStudentProfileStore } from '@/lib/profile-store';
 import { Loader2, RefreshCw } from "lucide-react";
 import apiClient from '@/lib/axios';
-
+import { BookOpenCheck } from "lucide-react"; 
 interface Program {
   id: number
   code: string
@@ -103,63 +103,65 @@ export const SubjectEnlistment = () => {
   const [fetchingSchedules, setFetchingSchedules] = useState<boolean>(true);
   const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
   const [available_semester, setSemester] = useState<Semester[]>([]);
+  
   const { 
     personal_data,
     academic_background,
-    fetchStudentData 
   } = useFullDataStore();
   const profileData = useStudentProfileStore(state => state.profileData);
+  
+  // Return early if no academic background
+  if (!academic_background?.[0]) {
+    return null;
+  }
+
   const { program, year_level, semester_entry } = academic_background[0];
+
+  const fetchSchedules = async () => {
+    setFetchingSchedules(true);
+    let retries = 3;
+    
+    while (retries > 0) {
+      try {
+        const semester_response = await apiClient.get(`/semester/?campus_id=${profileData.profile.student_info.campus}`);
+        const semesters = semester_response.data.results;
+        setSemester(semesters);
+  
+        const response = await apiClient.get(`/schedules/`, {
+          params: {
+            program_id: program,
+            year_level: year_level,
+            semester_id: semester_entry
+          }
+        });
+        
+        setSchedules(response.data.schedules || []);
+        break;
+      } catch (error) {
+        retries--;
+        if (retries === 0) {
+          if (axios.isAxiosError(error) && error.response?.status !== 404) {
+            toast({
+              title: "Error",
+              description: "Failed to load available schedules. Please try again.",
+              variant: "destructive",
+            });
+          }
+          setSchedules([]);
+        } else {
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
+        }
+      }
+    }
+    setFetchingSchedules(false);
+  };
+
+  
   useEffect(() => {
     if (academic_background?.[0]) {
       fetchSchedules();
     }
-  }, [academic_background]);
-  if (!academic_background?.[0]) return;
-  
-  setFetchingSchedules(true);
-  
-  const fetchSchedules = async () => {
-
-    
-    try {
-      const semester_response = await apiClient.get(`/semester/?campus_id=${profileData.profile.student_info.campus}`);
-      const semesters = semester_response.data.results;
-      setSemester(semesters);
-  
-      const currentSemester = semesters.find((sem: Semester)  => sem.id === semester_entry);
-
-      if (!currentSemester) {
-        setSchedules([]); // Set empty schedules instead of throwing error
-        return;
-      }
-      
-      const response = await apiClient.get(`/schedules/`, {
-        params: {
-          program_id: program,
-          year_level: year_level,
-          semester_id: semester_entry
-        }
-      });
-      
-      // If schedules exist in response, set them, otherwise set empty array
-      setSchedules(response.data.schedules || []);
-  
-    } catch (error) {
-      // Only show error toast for actual API failures
-      if (axios.isAxiosError(error) && error.response?.status !== 404) {
-        toast({
-          title: "Error",
-          description: "Failed to load available schedules. Please try again.",
-          variant: "destructive",
-        });
-      }
-      setSchedules([]); // Set empty schedules on error
-    } finally {
-      setFetchingSchedules(false);
-    }
-  };
-
+  }, [academic_background, program, year_level, semester_entry]);
 
   const handleSelectSubject = (scheduleId: number) => {
     setSelectedSubjects(prev => 
@@ -189,74 +191,105 @@ export const SubjectEnlistment = () => {
       return;
     }
 
-    console.log(`selected subjects: ${selectedSubjects}`);
-    console.log(`Posting data: { fulldata_applicant_id: ${applicant_id}, class_ids: ${JSON.stringify(selectedSubjects)} }`);
-
     setLoading(true);
     try {
       await axios.post('https://djangoportal-backends.onrender.com/api/schedules/', {
-            fulldata_applicant_id: applicant_id,
-            class_ids: selectedSubjects
-        });
-        
-        toast({
-            title: "Success",
-            description: "Successfully submitted enlistment!",
-        });
-    
-        await axios.post('https://djangoportal-backends.onrender.com/api/enlisted-students/', {
-          fulldata_applicant_id: applicant_id,
-          semester_id: semester_entry
+        fulldata_applicant_id: applicant_id,
+        class_ids: selectedSubjects
       });
-      } catch (error) {
-          toast({
-              title: "Error",
-              description: "Failed to submit enlistment. Please try again.",
-              variant: "destructive",
-          });
-      } finally {
+        
+      toast({
+        title: "Success",
+        description: "Successfully submitted enlistment!",
+      });
+    
+      await axios.post('https://djangoportal-backends.onrender.com/api/enlisted-students/', {
+        fulldata_applicant_id: applicant_id,
+        semester_id: semester_entry
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit enlistment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
     }
-};
+  };
 
+  const SubjectTableSkeleton = () => (
+    <div className="space-y-4">
+      {/* Table Skeleton */}
+      <div className="border border-indigo-100 rounded-xl overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4">
+          <div className="grid grid-cols-7 gap-4">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="h-6 bg-blue-200/50 rounded animate-pulse" />
+            ))}
+          </div>
+        </div>
+        
+        {/* Rows */}
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="border-t border-indigo-100 p-4">
+            <div className="grid grid-cols-7 gap-4">
+              {[...Array(7)].map((_, j) => (
+                <div key={j} className="h-5 bg-blue-50 rounded animate-pulse" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   return (
     <Card className="w-full bg-gradient-to-br from-white to-blue-50 border-none shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-[#1A2A5B] to-[#2a3c6d] text-white rounded-t-xl p-6">
-
-        <CardTitle className="text-2xl font-bold tracking-tight">Available Subjects</CardTitle>
-        <Button 
-          onClick={handleSubmitEnlistment}
-          disabled={selectedSubjects.length === 0 || loading}
-          className="ml-auto bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700 shadow-lg transition-all duration-300 font-semibold"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Enrolling...
-            </>
-          ) : (
-            <>
-              Submit Enlistment
-              {selectedSubjects.length > 0 && (
-                <span className="ml-2 bg-blue-600 text-white rounded-full px-2 py-0.5 text-xs">
-                  {selectedSubjects.length}
-                </span>
-              )}
-            </>
-          )}
-        </Button>
+      <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-[#1A2A5B] to-[#2a3c6d] text-white rounded-t-xl p-6">
+        {fetchingSchedules ? (
+          <div className="flex items-center space-x-3">
+            <BookOpenCheck className="h-6 w-6 text-[#A9664E] animate-bounce" />
+            <CardTitle className="text-2xl font-bold tracking-tight">Loading Subjects...</CardTitle>
+          </div>
+        ) : (
+          <>
+            <CardTitle className="text-2xl font-bold tracking-tight">Available Subjects</CardTitle>
+            {schedules.length > 0 && (
+              <Button 
+                onClick={handleSubmitEnlistment}
+                disabled={selectedSubjects.length === 0 || loading}
+                className="ml-auto bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700 shadow-lg transition-all duration-300 font-semibold"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enrolling...
+                  </>
+                ) : (
+                  <>
+                    Submit Enlistment
+                    {selectedSubjects.length > 0 && (
+                      <span className="ml-2 bg-blue-600 text-white rounded-full px-2 py-0.5 text-xs">
+                        {selectedSubjects.length}
+                      </span>
+                    )}
+                  </>
+                )}
+              </Button>
+            )}
+          </>
+        )}
       </CardHeader>
+      
       <CardContent className="p-6">
         {fetchingSchedules ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className="h-12 w-12 animate-spin mb-4 text-indigo-600" />
-            <p className="text-lg text-indigo-600/70 font-medium">Loading available subjects...</p>
-          </div>
+          <SubjectTableSkeleton />
         ) : schedules.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 space-y-6">
             <div className="text-center space-y-4">
-              <h3 className="font-bold text-xl text-indigo-900">No Subjects Available</h3>
-              <p className="text-indigo-600/70 max-w-md">
+              <h3 className="font-bold text-xl text-[#1A2A5B]">No Subjects Available</h3>
+              <p className="text-[#1A2A5B]/70 max-w-md">
                 There are currently no subjects available for enrollment in this semester. 
                 Please check back later or contact your administrator.
               </p>
@@ -265,24 +298,24 @@ export const SubjectEnlistment = () => {
               variant="outline" 
               size="lg"
               onClick={fetchSchedules} 
-              className="mt-6 border-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300 font-semibold group"
+              className="mt-6 border-2 border-[#1A2A5B]/20 text-[#1A2A5B] hover:bg-[#1A2A5B]/5 hover:border-[#1A2A5B]/30 transition-all duration-300 font-semibold group"
             >
               <RefreshCw className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-500" />
               Refresh List
             </Button>
           </div>
         ) : (
-          <div className="rounded-xl overflow-hidden border border-indigo-100 shadow-sm">
+          <div className="rounded-xl overflow-hidden border border-[#1A2A5B]/10 shadow-sm">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gradient-to-r from-indigo-50 to-blue-50">
-                  <TableHead className="font-bold text-indigo-900 py-4">Course Code</TableHead>
-                  <TableHead className="font-bold text-indigo-900">Course Name</TableHead>
-                  <TableHead className="font-bold text-indigo-900">Schedule</TableHead>
-                  <TableHead className="font-bold text-indigo-900">Instructor</TableHead>
-                  <TableHead className="font-bold text-indigo-900">Room</TableHead>
-                  <TableHead className="font-bold text-indigo-900">Units</TableHead>
-                  <TableHead className="font-bold text-indigo-900">Action</TableHead>
+                <TableRow className="bg-gradient-to-r from-[#1A2A5B]/5 to-[#1A2A5B]/10">
+                  <TableHead className="font-bold text-[#1A2A5B] py-4">Course Code</TableHead>
+                  <TableHead className="font-bold text-[#1A2A5B]">Course Name</TableHead>
+                  <TableHead className="font-bold text-[#1A2A5B]">Schedule</TableHead>
+                  <TableHead className="font-bold text-[#1A2A5B]">Instructor</TableHead>
+                  <TableHead className="font-bold text-[#1A2A5B]">Room</TableHead>
+                  <TableHead className="font-bold text-[#1A2A5B]">Units</TableHead>
+                  <TableHead className="font-bold text-[#1A2A5B]">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -292,14 +325,14 @@ export const SubjectEnlistment = () => {
                   return (
                     <TableRow 
                       key={schedule.schedule_id}
-                      className="hover:bg-blue-50/50 transition-colors duration-200"
+                      className="hover:bg-[#1A2A5B]/5 transition-colors duration-200"
                     >
-                      <TableCell className="font-semibold text-indigo-900">{schedule.course.code}</TableCell>
-                      <TableCell className="text-indigo-800">{schedule.course.description}</TableCell>
-                      <TableCell className="text-indigo-800">{`${schedule.day} ${schedule.time.start} - ${schedule.time.end}`}</TableCell>
-                      <TableCell className="text-indigo-800">{`${schedule.instructor.title} ${schedule.instructor.name}`}</TableCell>
-                      <TableCell className="text-indigo-800">{schedule.room}</TableCell>
-                      <TableCell className="text-indigo-800">{schedule.course.units}</TableCell>
+                      <TableCell className="font-semibold text-[#1A2A5B]">{schedule.course.code}</TableCell>
+                      <TableCell className="text-[#1A2A5B]/90">{schedule.course.description}</TableCell>
+                      <TableCell className="text-[#1A2A5B]/90">{`${schedule.day} ${schedule.time.start} - ${schedule.time.end}`}</TableCell>
+                      <TableCell className="text-[#1A2A5B]/90">{`${schedule.instructor.title} ${schedule.instructor.name}`}</TableCell>
+                      <TableCell className="text-[#1A2A5B]/90">{schedule.room}</TableCell>
+                      <TableCell className="text-[#1A2A5B]/90">{schedule.course.units}</TableCell>
                       <TableCell>
                         <Button 
                           variant={isSelected ? "default" : "outline"}
@@ -309,8 +342,8 @@ export const SubjectEnlistment = () => {
                           className={`
                             transition-all duration-300 font-medium px-4
                             ${isSelected
-                              ? "bg-gradient-to-r from-[#1A2A5B] to-[#1A2A5B] hover:from-[#1A2A5B] hover:to-[#1A2A5B] text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                              : "border-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300"
+                              ? "bg-gradient-to-r from-[#1A2A5B] to-[#1A2A5B] hover:from-[#1A2A5B] hover:to-[#1A2A5B]/90 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                              : "border-2 border-[#1A2A5B]/20 text-[#1A2A5B] hover:bg-[#1A2A5B]/5 hover:border-[#1A2A5B]/30"
                             }
                           `}
                         >

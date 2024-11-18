@@ -4,6 +4,7 @@ import apiClient from './axios';
 import axios from 'axios';
 import { useStudentProfileStore } from './profile-store';
 
+
 interface PersonalData {
   fulldata_applicant_id: number;
   f_name: string;
@@ -138,7 +139,6 @@ interface StudentActions {
   updatePersonalData: (data: Partial<PersonalData>) => Promise<void>;
   resetStore: () => void;
 }
-
 const initialState: StudentState = {
   personal_data: [],
   add_personal_data: [],
@@ -150,6 +150,7 @@ const initialState: StudentState = {
   error: null,
 };
 
+
 export const useFullDataStore = create<StudentState & StudentActions>((set, get) => ({
   ...initialState,
   setPersonalData: (data) => set({ personal_data: data }),
@@ -158,41 +159,56 @@ export const useFullDataStore = create<StudentState & StudentActions>((set, get)
   setAcademicBackground: (data) => set({ academic_background: data }),
   setAcademicHistory: (data) => set({ academic_history: data }),
 
-  fetchStudentData: async (basicDataApplicantId: number) => {
+  fetchStudentData: async () => {
     try {
-        console.log(`FETCH IS USED`)
-        set({ isLoading: true, error: null });
-        
-        const response = await apiClient.get(
-            `https://djangoportal-backends.onrender.com/api/full-student-data/?filter=basicdata_applicant_id=${basicDataApplicantId}`
-        );
-        const data = await response.data;
-        
-        set({
-            personal_data: data.personal_data,
-            add_personal_data: data.add_personal_data,
-            family_background: data.family_background,
-            academic_background: data.academic_background,
-            academic_history: data.academic_history,
-            isLoading: false,
-            isInitialized: true, 
+      // Get profile store state
+      const profileStore = useStudentProfileStore.getState();
+      
+      // Check if profile store is properly initialized
+      if (!profileStore.profileData || !profileStore.profileData.fulldata_applicant_id || profileStore.isLoading) {
+        console.log('Waiting for profile store to be initialized...');
+        return;
+      }
+
+      const fullDataApplicantId = profileStore.profileData.fulldata_applicant_id;
+      
+      console.log(`FETCHING FULL DATA for ID: ${fullDataApplicantId}`);
+      set({ isLoading: true, error: null });
+      
+      const response = await apiClient.get(
+        `http://127.0.0.1:8000/api/full-student-data/?filter=fulldata_applicant_id=${fullDataApplicantId}`
+      );
+      
+      const data = await response.data;
+      console.log(`response data: ${JSON.stringify(data, null, 2)}`);
+      
+      set({
+        personal_data: data.personal_data,
+        add_personal_data: data.add_personal_data,
+        family_background: data.family_background,
+        academic_background: data.academic_background,
+        academic_history: data.academic_history,
+        isLoading: false,
+        isInitialized: true,
+      });
+      
+      console.log(`initial state: ${JSON.stringify(initialState, null, 2)}`);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        set({ 
+          error: error.response?.data?.message || 'Failed to fetch student data', 
+          isLoading: false,
+          isInitialized: true, 
         });
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                set({ 
-                    error: error.response?.data?.message || 'Failed to fetch student data', 
-                    isLoading: false,
-                    isInitialized: true, 
-                });
-            } else {
-                set({ 
-                    error: 'An unexpected error occurred', 
-                    isLoading: false,
-                    isInitialized: true, 
-                });
-            }
-        }
-    },
+      } else {
+        set({ 
+          error: 'An unexpected error occurred', 
+          isLoading: false,
+          isInitialized: true, 
+        });
+      }
+    }
+  },
 
   clearStudentData: async () => {
     console.log("clearProfile is triggered");
@@ -232,3 +248,5 @@ export const useFullDataStore = create<StudentState & StudentActions>((set, get)
     set(initialState);
   },
 }));
+
+

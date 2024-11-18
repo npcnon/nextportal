@@ -1,8 +1,8 @@
 // app/login/page.tsx
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -37,6 +37,7 @@ export default function LoginPage() {
   const [isNavigating, setIsNavigating] = useState(false)
   const { toast } = useToast()
   const setProfile = useStudentProfileStore(state => state.setProfile)
+  const searchParams = useSearchParams();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -84,7 +85,16 @@ export default function LoginPage() {
       setIsLoading(false)
     }
   }
-
+  useEffect(() => {
+    const message = searchParams.get('message');
+    if (message) {
+      toast({
+        title: "Session Expired",
+        description: decodeURIComponent(message),
+        variant: "default", // or you could use a custom variant
+      });
+    }
+  }, [searchParams, toast]);
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 to-gray-800">
       {/* Navigation Loading Overlay */}

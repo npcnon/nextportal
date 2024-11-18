@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { useStudentProfileStore } from '@/lib/profile-store';
-import apiClient, { clearAuthTokens } from '@/lib/axios';
+import apiClient, { AuthenticationError, clearAuthTokens } from '@/lib/axios';
 import { useToast } from '@/hooks/use-toast';
 import { useHeader } from '../providers/header-provider';
 
@@ -108,11 +108,15 @@ export const DashboardHeader = () => {
         }
       } catch (error) {
         console.error('Error fetching profile picture:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load profile picture",
-          variant: "destructive",
-        });
+        if (!(error instanceof AuthenticationError)) {
+          toast({
+            title: "Error",
+            description: "Failed to load profile picture",
+            variant: "destructive",
+          });
+        }
+
+
       } finally {
         setIsLoadingPicture(false);
       }

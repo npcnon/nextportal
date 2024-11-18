@@ -8,7 +8,7 @@ import { Loading } from '@/components/ui/loading';
 import { Mail, Phone, Map, User, Calendar, Book, School, Home } from 'lucide-react';
 import { useStudentProfileStore } from '@/lib/profile-store';
 import { useToast } from '@/hooks/use-toast';
-import apiClient from '@/lib/axios';
+import apiClient, { AuthenticationError } from '@/lib/axios';
 
 export default function StudentProfile(){
 
@@ -40,11 +40,15 @@ useEffect(() => {
       }
     } catch (error) {
       console.error('Error fetching profile picture:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load profile picture",
-        variant: "destructive",
-      });
+      if (!(error instanceof AuthenticationError)) {
+        toast({
+          title: "Error",
+          description: "Failed to load profile picture",
+          variant: "destructive",
+        });
+      }
+
+
     } finally {
       setIsLoadingPicture(false);
     }
@@ -99,7 +103,7 @@ useEffect(() => {
               <h3 className="mt-4 text-lg font-medium">Error Loading Profile</h3>
               <p className="mt-2 text-sm text-gray-600">{error}</p>
               <button
-                onClick={() => fetchStudentData(profileData.profile.student_info.basicdata_applicant_id)}
+                onClick={() => fetchStudentData(profileData.fulldata_applicant_id)}
                 className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
               >
                 Try Again

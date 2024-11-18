@@ -17,10 +17,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { AlertCircle, CheckCircle, GraduationCap, Loader2, Mail, User } from 'lucide-react'
+import { AlertCircle, ArrowRight, CheckCircle, CheckSquare, CircleUserRound, GraduationCap, Loader2, Mail, Shield, Sparkles, Star, User, X } from 'lucide-react'
 import { z } from 'zod'
 import { Textarea } from '@/components/ui/textarea'
 import apiClient from '@/lib/axios'
+import { motion } from 'framer-motion'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 // Mock data for programs and campuses
 
@@ -87,7 +89,10 @@ export default function EnrollmentForm() {
   const [isVerifyingEmail, setIsVerifyingEmail] = useState(false)
   const [isVerifyingCode, setIsVerifyingCode] = useState(false)
   const [isEmailVerified, setIsEmailVerified] = useState(false)
-
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [formData, setFormData] = useState({
     first_name: '',
     middle_name: '',
@@ -109,13 +114,13 @@ export default function EnrollmentForm() {
     router.push(path)
   }
 
-
+  
 
   const handleEmailVerification = async () => {
     setIsVerifyingEmail(true)
     try {
       // Replace with your actual API endpoint
-      const response = await axios.post('https://djangoportal-backends.onrender.com/api/emailapi', {
+      const response = await axios.post('http://127.0.0.1:8000/api/emailapi', {
         email: formData.email
       })
       
@@ -125,14 +130,17 @@ export default function EnrollmentForm() {
           title: "Verification Code Sent",
           description: "Please check your email for the verification code.",
           variant: "default",
-          className: "bg-green-500 text-white",
-        })
+          className:
+            "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg rounded-lg px-6 py-4 border border-blue-400",
+        });
+        
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to send verification code. Please try again.",
         variant: "destructive",
+        className: "bg-red-500 text-white border-none shadow-none",
       })
     } finally {
       setIsVerifyingEmail(false)
@@ -142,7 +150,7 @@ export default function EnrollmentForm() {
   const handleVerificationCodeSubmit = async () => {
     setIsVerifyingCode(true)
     try {
-      const response = await axios.put('https://djangoportal-backends.onrender.com/api/emailapi', {
+      const response = await axios.put('http://127.0.0.1:8000/api/emailapi', {
         email: formData.email,
         verification_code: formData.email_verification_code
       })
@@ -153,7 +161,7 @@ export default function EnrollmentForm() {
           title: "Success",
           description: "Email verified successfully!",
           variant: "default",
-          className: "bg-green-500 text-white",
+          className: "bg-blue-500 text-white border-none shadow-none",
         })
       }
     } catch (error) {
@@ -161,6 +169,8 @@ export default function EnrollmentForm() {
         title: "Error",
         description: "Invalid verification code. Please try again.",
         variant: "destructive",
+        className: "bg-red-500 text-white border-none shadow-none",
+
       })
     } finally {
       setIsVerifyingCode(false)
@@ -178,6 +188,8 @@ export default function EnrollmentForm() {
           title: "Error",
           description: "Failed to load programs. Please try again.",
           variant: "destructive",
+          className: "bg-red-500 text-white border-none shadow-none",
+
         })
       }
     }
@@ -201,319 +213,469 @@ export default function EnrollmentForm() {
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }))
+
+    // Update selectedProgram when program changes
+    if (name === 'program' && value) {
+      const program = programs.find(p => p.id.toString() === value);
+      setSelectedProgram(program || null);
+    }
   }
 
-  const handleSubmit = async () => {
-    if (!isEmailVerified) {
-      toast({
-        title: "Email Not Verified",
-        description: "Please verify your email before submitting the enrollment form.",
-        variant: "destructive",
-      })
-      return
-    }
-  
+// Main submit handler
+const handleSubmit = async () => {
+  if (!isEmailVerified) {
+    toast({
+      title: "Email Not Verified",
+      description: "Please verify your email before submitting the enrollment form.",
+      variant: "destructive",
+      className: "bg-red-500 text-white border-none shadow-none",
+
+    });
+    return;
+  }
+
+  try {
+    enrollmentSchema.parse(formData);
+    setErrors({});
+    setIsSubmitting(true);
+
     try {
-      enrollmentSchema.parse(formData)
-      setErrors({})
-      
-      setIsLoading(true)
-  
-      try {
-        const response = await axios.post('https://djangoportal-backends.onrender.com/api/stdntbasicinfo/', formData)
-        if (response.status === 201) {
-          // Don't close the dialog immediately
-          toast({
-            title: "Success!",
-            description: "Your enrollment has been submitted successfully. Please Check your email",
-            variant: "default",
-            className: "bg-green-500 text-white",
-          })
-          // Add a small delay before closing dialog and navigating
-          setTimeout(() => {
-            setShowConfirmDialog(false)
-            handleNavigation('/login')
-          }, 500)
-        }
-      } catch (error) {
-        console.error('Enrollment submission failed:', error)
+      const response = await axios.post('http://127.0.0.1:8000/api/stdntbasicinfo/', formData);
+      if (response.status === 201) {
+        setIsSubmitted(true);
+        
         toast({
-          title: "Error",
-          description: "Failed to submit enrollment. Please try again.",
-          variant: "destructive",
-        })
-        setIsLoading(false) // Only reset loading on error
+          title: "Success!",
+          description: "Your enrollment has been submitted successfully. Please check your email",
+          variant: "default",
+          className: "bg-blue-500 text-white border-none shadow-none",
+        });
+        
+        setTimeout(() => {
+          setIsNavigating(true);
+          router.push('/login');
+        }, 1000);
       }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        const formattedErrors: Partial<Record<keyof EnrollmentSchema, string>> = {}
-        const errorMessages: string[] = []
-        
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            // Format the field name to be more readable
-            const fieldName = err.path[0].toString()
-              .replace(/_/g, ' ')
-              .split(' ')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ')
-            
-            formattedErrors[err.path[0] as keyof EnrollmentSchema] = err.message
-            errorMessages.push(`${fieldName}: ${err.message}`)
-          }
-        })
-        
-        setErrors(formattedErrors)
-        
-        toast({
-          title: "Please fix the following errors:",
-          description: (
-            <ul className="list-disc pl-4 mt-2 space-y-1">
-              {errorMessages.map((message, index) => (
-                <li key={index}>{message}</li>
-              ))}
-            </ul>
-          ),
-          variant: "destructive",
-          duration: 5000,
-        })
-      }
-      return
+      console.error('Enrollment submission failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit enrollment. Please try again.",
+        variant: "destructive",
+        className: "bg-red-500 text-white border-none shadow-none",
+
+      });
+      setIsSubmitting(false);
+    }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const formattedErrors: Partial<Record<keyof EnrollmentSchema, string>> = {};
+      const errorMessages: string[] = [];
+      
+      error.errors.forEach((err) => {
+        if (err.path[0]) {
+          const fieldName = err.path[0].toString()
+            .replace(/_/g, ' ')
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+          
+          formattedErrors[err.path[0] as keyof EnrollmentSchema] = err.message;
+          errorMessages.push(`${fieldName}: ${err.message}`);
+        }
+      });
+      
+      setErrors(formattedErrors);
+      
+      toast({
+        title: "Please fix the following errors:",
+        description: (
+          <ul className="list-disc pl-4 mt-2 space-y-1">
+            {errorMessages.map((message, index) => (
+              <li key={index}>{message}</li>
+            ))}
+          </ul>
+        ),
+        variant: "destructive",
+        duration: 5000,
+        className: "bg-red-500 text-white border-none shadow-none",
+
+      });
     }
   }
-  const ConfirmationDialog = () => (
-    <Dialog 
-      open={showConfirmDialog} 
-      onOpenChange={(open) => {
-        if (!isLoading) {
-          setShowConfirmDialog(open)
-        }
-      }}
-    >
-      <DialogContent className="sm:max-w-[500px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-6">
-        <DialogHeader className="space-y-3">
-          <DialogTitle className="text-2xl font-semibold tracking-tight">
-            Confirm Enrollment
-          </DialogTitle>
-          <DialogDescription className="text-base text-gray-500">
-            Please review your enrollment information carefully before proceeding.
-          </DialogDescription>
-        </DialogHeader>
-  
-        <div className="mt-6 space-y-4">
-          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-            {/* Keep the same content rows */}
-            <div className="flex items-center space-x-4 p-2 hover:bg-gray-100 rounded-md transition-colors">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <User className="h-5 w-5 text-blue-600 animate-pulse" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-500">Full Name</p>
-                <p className="text-base font-medium">
-                  {`${formData.first_name} ${formData.middle_name} ${formData.last_name}`}
-                </p>
-              </div>
-            </div>
-  
-            <div className="flex items-center space-x-4 p-2 hover:bg-gray-100 rounded-md transition-colors">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <GraduationCap className="h-5 w-5 text-purple-600 animate-bounce" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-500">Selected Program</p>
-                <p className="text-base font-medium">
-                  {programs.find(p => p.id === Number(formData.program))?.description}
-                </p>
-              </div>
-            </div>
-  
-            <div className="flex items-center space-x-4 p-2 hover:bg-gray-100 rounded-md transition-colors">
-              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                <Mail className="h-5 w-5 text-orange-600 animate-pulse" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-500">Email Status</p>
-                <div className="flex items-center space-x-2">
-                  {isEmailVerified ? (
-                    <>
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="text-green-600 font-medium">Verified</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="h-5 w-5 text-red-500" />
-                      <span className="text-red-600 font-medium">Not Verified</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-  
-        <div className="mt-6">
-          <div className="flex gap-3 justify-end items-center">
-            <Button
-              variant="outline"
-              onClick={() => setShowConfirmDialog(false)}
-              disabled={isLoading}
-              className="w-[120px] h-10"
+};
+
+const ConfirmationDialog = () => (
+  <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+    <DialogContent className="sm:max-w-[500px] transform transition-all duration-500 hover:shadow-2xl bg-white overflow-hidden">
+      <div className="absolute inset-0 bg-[#1A2A5B]/5 pointer-events-none" />
+      
+      {/* Floating celebration icons that appear during submission */}
+      {isSubmitting && (
+        <div className="absolute inset-0 overflow-hidden">
+          {[CheckCircle, Star, Sparkles, CheckSquare].map((Icon, index) => (
+            <div
+              key={index}
+              className="absolute animate-float opacity-0"
+              style={{
+                animation: `float 1.5s ease-out ${index * 100}ms forwards`,
+                left: `${Math.random() * 80 + 10}%`
+              }}
             >
-              Cancel
-            </Button>
-            <div className="w-[160px] h-10">
-              <Button
-                onClick={handleSubmit}
-                disabled={isLoading}
-                className="w-full h-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <div className="w-full flex items-center justify-center space-x-2">
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Submitting...</span>
-                    </>
-                  ) : (
-                    'Confirm Enrollment'
-                  )}
-                </div>
-              </Button>
+              <Icon className="w-4 h-4 text-[#D97757]" />
             </div>
+          ))}
+        </div>
+      )}
+
+      <DialogHeader>
+        <DialogTitle className="text-2xl font-bold text-[#1A2A5B] flex items-center gap-2">
+          <Shield className="w-6 h-6 text-[#1A2A5B] animate-pulse" />
+          Confirm Enrollment Details
+        </DialogTitle>
+        <DialogDescription className="text-gray-600">
+          Please verify that the following information is correct:
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-6 py-4">
+        {/* Personal Information Section */}
+        <div className="p-4 rounded-xl transition-all duration-300 hover:bg-white/80 border border-transparent hover:border-[#1A2A5B]/20 hover:shadow-lg group">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#1A2A5B]/10 group-hover:bg-[#1A2A5B] transition-all duration-500 group-hover:rotate-6 group-hover:scale-110">
+              <User className="h-5 w-5 text-[#1A2A5B] group-hover:text-white transition-colors duration-300" />
+            </div>
+            <span className="font-medium text-gray-700">Full Name</span>
+            <Sparkles className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all duration-300 text-[#D97757]" />
+          </div>
+          <p className="text-sm text-gray-600 pl-11">
+            {`${formData.first_name} ${formData.middle_name} ${formData.last_name} ${formData.suffix}`.trim()}
+          </p>
+        </div>
+
+        {/* Program Section */}
+        <div className="p-4 rounded-xl transition-all duration-300 hover:bg-white/80 border border-transparent hover:border-[#1A2A5B]/20 hover:shadow-lg group">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#1A2A5B]/10 group-hover:bg-[#1A2A5B] transition-all duration-500 group-hover:rotate-6 group-hover:scale-110">
+              <GraduationCap className="h-5 w-5 text-[#1A2A5B] group-hover:text-white transition-colors duration-300" />
+            </div>
+            <span className="font-medium text-gray-700">Program</span>
+            <Star className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all duration-300 text-[#D97757]" />
+          </div>
+          <p className="text-sm text-gray-600 pl-11">
+            {programs.find(p => p.id.toString() === formData.program)?.description || 'Not selected'}
+          </p>
+        </div>
+
+        {/* Email Status Section */}
+        <div className="p-4 rounded-xl transition-all duration-300 hover:bg-white/80 border border-transparent hover:border-[#1A2A5B]/20 hover:shadow-lg group">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#1A2A5B]/10 group-hover:bg-[#1A2A5B] transition-all duration-500 group-hover:rotate-6 group-hover:scale-110">
+              <Mail className="h-5 w-5 text-[#1A2A5B] group-hover:text-white transition-colors duration-300" />
+            </div>
+            <span className="font-medium text-gray-700">Email Status</span>
+            <Shield className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all duration-300 text-[#D97757]" />
+          </div>
+          <div className="flex items-center gap-2 pl-11">
+            {isEmailVerified ? (
+              <div className="flex items-center gap-2 text-[#1A2A5B]">
+                <CheckCircle className="h-5 w-5 animate-bounce" />
+                <span className="text-sm font-medium">Successfully Verified</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="h-5 w-5 animate-pulse" />
+                <span className="text-sm font-medium">Not Verified</span>
+              </div>
+            )}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
-  )
+      </div>
+
+      <DialogFooter className="gap-4">
+        <Button
+          variant="outline"
+          onClick={() => setShowConfirmDialog(false)}
+          className="w-full sm:w-auto group relative overflow-hidden transition-all duration-300 hover:border-red-500 hover:text-red-500 hover:shadow-md"
+        >
+          <span className="flex items-center justify-center gap-2">
+            <X className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+            Cancel
+          </span>
+        </Button>
+        <Button
+          onClick={() => {
+            setShowConfirmDialog(false);
+            handleSubmit();
+          }}
+          disabled={!isEmailVerified || isSubmitting}
+          className={`
+            w-full sm:w-auto text-white transition-all duration-500 
+            group relative overflow-hidden
+            ${isSubmitting 
+              ? 'bg-[#D97757] hover:bg-[#C56646]' 
+              : 'bg-[#1A2A5B] hover:bg-[#15234D]'
+            }
+          `}
+        >
+          <span className="flex items-center justify-center gap-2">
+            {isSubmitting ? (
+              <>
+                <CheckCircle className="h-4 w-4 animate-bounce" />
+                Processing...
+              </>
+            ) : (
+              <>
+                Confirm & Submit
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+              </>
+            )}
+          </span>
+        </Button>
+      </DialogFooter>
+
+      <style jsx>{`
+        @keyframes float {
+          0% {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-100px) scale(0);
+            opacity: 0;
+          }
+        }
+      `}</style>
+    </DialogContent>
+  </Dialog>
+);
 
   const renderStep1 = () => (
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-700">Personal Information</h2>
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium mb-2 text-gray-600">First Name</label>
-          <Input
-            required
-            name="first_name"
-            value={formData.first_name}
-            onChange={handleChange}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-              errors.first_name ? 'border-red-500' : ''
-            }`}
-            placeholder="Enter your first name"
-          />
-          {errors.first_name && (
-            <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>
-          )}
-        </div>
+    <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="space-y-8"
+  >
+    <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#1A2A5B]/10 group-hover:bg-[#1A2A5B] transition-all duration-500">
+        <CircleUserRound className="h-6 w-6 text-[#1A2A5B]" />
+      </div>
+      <div>
+        <h2 className="text-2xl font-bold text-[#1A2A5B]">Personal Information</h2>
+        <p className="text-gray-600 text-sm">Please enter your personal details</p>
+      </div>
+    </div>
+
+    <div className="grid md:grid-cols-2 gap-6">
+      <div className="space-y-2 transition-all duration-300 group">
+        <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
+          First Name
+        </label>
+        <Input
+          required
+          name="first_name"
+          value={formData.first_name}
+          onChange={handleChange}
+          className={`
+            w-full transition-all duration-300
+            border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
+            ${errors.first_name ? 'border-red-500 focus:border-red-500' : ''}
+          `}
+          placeholder="Enter your first name"
+        />
+        {errors.first_name && (
+          <motion.p 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-red-500 text-sm"
+          >
+            {errors.first_name}
+          </motion.p>
+        )}
+      </div>
+      <div className="space-y-2 transition-all duration-300 group">
+        <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
+          Middle Name
+        </label>
+        <Input
+          required
+          name="middle_name"
+          value={formData.middle_name}
+          onChange={handleChange}
+          className={`
+            w-full transition-all duration-300
+            border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
+            ${errors.middle_name ? 'border-red-500 focus:border-red-500' : ''}
+          `}
+          placeholder="Enter your middle name"
+        />
+        {errors.middle_name && (
+          <motion.p 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-red-500 text-sm"
+          >
+            {errors.middle_name}
+          </motion.p>
+        )}
+      </div>
+
+      <div className="space-y-2 transition-all duration-300 group">
+        <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
+          Last Name
+        </label>
+        <Input
+          required
+          name="last_name"
+          value={formData.last_name}
+          onChange={handleChange}
+          className={`
+            w-full transition-all duration-300
+            border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
+            ${errors.last_name ? 'border-red-500 focus:border-red-500' : ''}
+          `}
+          placeholder="Enter your last name"
+        />
+        {errors.last_name && (
+          <motion.p 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-red-500 text-sm"
+          >
+            {errors.last_name}
+          </motion.p>
+        )}
+      </div>
+
+      <div className="space-y-2 transition-all duration-300 group">
+        <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
+          Suffix Name
+        </label>
+        <Input
+          required
+          name="suffix"
+          value={formData.suffix}
+          onChange={handleChange}
+          className={`
+            w-full transition-all duration-300
+            border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
+            ${errors.suffix ? 'border-red-500 focus:border-red-500' : ''}
+          `}
+          placeholder="Enter your last name"
+        />
+        {errors.suffix && (
+          <motion.p 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-red-500 text-sm"
+          >
+            {errors.suffix}
+          </motion.p>
+        )}
+      </div>
+
 
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-600">Middle Name</label>
-          <Input
-            required
-            name="middle_name"
-            value={formData.middle_name}
-            onChange={handleChange}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-              errors.middle_name ? 'border-red-500' : ''
-            }`}
-            placeholder="Enter your middle name"
-          />
-          {errors.middle_name && (
-            <p className="text-red-500 text-sm mt-1">{errors.middle_name}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2 text-gray-600">Last Name</label>
-          <Input
-            required
-            name="last_name"
-            value={formData.last_name}
-            onChange={handleChange}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-              errors.last_name ? 'border-red-500' : ''
-            }`}
-            placeholder="Enter your last name"
-          />
-          {errors.last_name && (
-            <p className="text-red-500 text-sm mt-1">{errors.last_name}</p>
-          )}
-          
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2 text-gray-600">Suffix</label>
-          <Input
-            required
-            name="suffix"
-            value={formData.suffix}
-            onChange={handleChange}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-              errors.suffix ? 'border-red-500' : ''
-            }`}
-            placeholder="Enter your suffix"
-          />
-          {errors.suffix && (
-            <p className="text-red-500 text-sm mt-1">{errors.suffix}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2 text-gray-600">Birth Date</label>
+        <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
+          Birth Date
+        </label>
           <Input
             required
             name="birth_date"
             type="date"
             value={formData.birth_date}
             onChange={handleChange}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-              errors.birth_date ? 'border-red-500' : ''
-            }`}
+            className={`
+              w-full transition-all duration-300
+              border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
+              ${errors.birth_date ? 'border-red-500 focus:border-red-500' : ''}
+            `}
+  
             placeholder="Enter your birth date"
           />
-          {errors.birth_date && (
-            <p className="text-red-500 text-sm mt-1">{errors.birth_date}</p>
-          )}
+        {errors.birth_date && (
+          <motion.p 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-red-500 text-sm"
+          >
+            {errors.birth_date}
+          </motion.p>
+        )}
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2 text-gray-600">Sex</label>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 transition-colors duration-200">
+            Sex
+          </label>
           <select
-            required
             name="sex"
             value={formData.sex}
             onChange={handleChange}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-              errors.sex ? 'border-red-500' : ''
-            }`}
+            className={`
+              w-full p-2 border rounded-md bg-white
+              focus:ring-2 focus:ring-[#1A2A5B]/20 focus:border-[#1A2A5B]
+              ${errors.sex ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-200'}
+            `}
           >
             <option value="">Select Sex</option>
             {sexOptions.map(option => (
-              <option key={option} value={option}>{option}</option>
+              <option key={option} value={option}>
+                {option}
+              </option>
             ))}
           </select>
-          {errors.sex && (
-            <p className="text-red-500 text-sm mt-1">{errors.sex}</p>
-          )}
           
+          {errors.sex && (
+            <motion.p
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-1.5 text-red-500 text-sm mt-1.5"
+            >
+              <AlertCircle className="h-4 w-4" />
+              {errors.sex}
+            </motion.p>
+          )}
         </div>
       </div>
       <Button
         onClick={() => setCurrentStep(2)}
-        className="w-full bg-blue-600 text-white hover:bg-blue-700 mt-6"
+        className="w-full bg-[#D44D00] hover:bg-[#B33F00] text-white transition-all duration-300
+          shadow-lg hover:shadow-xl hover:translate-y-[-2px]
+          disabled:bg-gray-400 disabled:shadow-none disabled:translate-y-0
+        "
         disabled={isLoading}
       >
-        Next Step
+        <span className="flex items-center justify-center gap-2">
+          Continue to Academic Details
+          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+        </span>
       </Button>
-    </div>
+    </motion.div>
   )
 
+
   const renderStep2 = () => (
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-700">Contact & Academic Information</h2>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-8"
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#1A2A5B]/10">
+          <GraduationCap className="h-6 w-6 text-[#1A2A5B]" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-[#1A2A5B]">Academic Information</h2>
+          <p className="text-gray-600 text-sm">Please enter your academic and contact details</p>
+        </div>
+      </div>
+
       <div className="grid md:grid-cols-2 gap-6">
-      <div>
-          <label className="block text-sm font-medium mb-2 text-gray-600">Email</label>
+        <div className="space-y-2 transition-all duration-300 group">
+          <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
+            Email
+          </label>
           <div className="flex gap-2">
             <Input
               required
@@ -521,18 +683,18 @@ export default function EnrollmentForm() {
               value={formData.email}
               onChange={handleChange}
               disabled={isEmailVerificationSent}
-              className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-                errors.email ? 'border-red-500' : ''
-              }`}
+              className={`
+                w-full transition-all duration-300
+                border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
+                ${errors.email ? 'border-red-500 focus:border-red-500' : ''}
+              `}
               placeholder="Enter your email"
             />
             <Button
               onClick={handleEmailVerification}
               disabled={isEmailVerificationSent || isVerifyingEmail || !formData.email}
-              className={`
-                whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700 
-                disabled:bg-gray-400 disabled:text-gray-200
-              `}
+              className="whitespace-nowrap bg-[#1A2A5B] text-white hover:bg-[#131F43] transition-all duration-300
+                disabled:bg-gray-400 disabled:text-gray-200"
             >
               {isVerifyingEmail ? (
                 <>
@@ -545,13 +707,22 @@ export default function EnrollmentForm() {
             </Button>
           </div>
           {errors.email && (
-            <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+            <motion.p 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-red-500 text-sm"
+            >
+              {errors.email}
+            </motion.p>
           )}
-
-          {/* Verification code input field - only shows after email is sent */}
+  
           {isEmailVerificationSent && (
-            <div className="mt-4">
-              <label className="block text-sm font-medium mb-2 text-gray-600">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 space-y-2"
+            >
+              <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
                 Verification Code
               </label>
               <div className="flex gap-2">
@@ -561,16 +732,14 @@ export default function EnrollmentForm() {
                   value={formData.email_verification_code}
                   onChange={handleChange}
                   disabled={isEmailVerified}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                  className="w-full transition-all duration-300 border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20"
                   placeholder="Enter verification code"
                 />
                 <Button
                   onClick={handleVerificationCodeSubmit}
                   disabled={!formData.email_verification_code || isVerifyingCode || isEmailVerified}
-                  className={`
-                    whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700 
-                    disabled:bg-gray-400 disabled:text-gray-200
-                  `}
+                  className="whitespace-nowrap bg-[#1A2A5B] text-white hover:bg-[#131F43] transition-all duration-300
+                    disabled:bg-gray-400 disabled:text-gray-200"
                 >
                   {isVerifyingCode ? (
                     <>
@@ -584,105 +753,149 @@ export default function EnrollmentForm() {
                   )}
                 </Button>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-2 text-gray-600">Contact Number</label>
+
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Contact Number
+          </label>
           <Input
             required
             name="contact_number"
             value={formData.contact_number}
             onChange={handleChange}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-              errors.contact_number ? 'border-red-500' : ''
-            }`}
+            className={`
+              w-full bg-white
+              border border-gray-300 shadow-sm
+              focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
+              ${errors.contact_number ? 'border-red-500 focus:border-red-500' : ''}
+            `}
             placeholder="Enter your contact number"
           />
           {errors.contact_number && (
-            <p className="text-red-500 text-sm mt-1">{errors.contact_number}</p>
+            <motion.p 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-red-500 text-sm"
+            >
+              {errors.contact_number}
+            </motion.p>
           )}
         </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-2 text-gray-600">Address</label>
+  
+        <div className="md:col-span-2 space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Address
+          </label>
           <textarea
             required
             name="address"
             value={formData.address}
             onChange={handleChange}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-              errors.address ? 'border-red-500' : ''
-            }`}
+            className={`
+              w-full bg-white p-2.5 rounded-md
+              border border-gray-300 shadow-sm
+              focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
+              ${errors.address ? 'border-red-500 focus:border-red-500' : ''}
+            `}
             rows={3}
             placeholder="Enter your complete address"
             maxLength={255}
           />
           {errors.address && (
-            <p className="text-red-500 text-sm mt-1">{errors.address}</p>
+            <motion.p 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-red-500 text-sm"
+            >
+              {errors.address}
+            </motion.p>
           )}
         </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2 text-gray-600">Campus</label>
-          
+  
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Campus
+          </label>
           <select
             required
             name="campus"
-            value={undefined}
+            value={formData.campus}
             onChange={handleChange}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-              errors.campus ? 'border-red-500' : ''
-            }`}
+            className={`
+              w-full bg-white p-2.5 rounded-md
+              border border-gray-300 shadow-sm
+              focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
+              ${errors.campus ? 'border-red-500 focus:border-red-500' : ''}
+            `}
           >
-            <option value="">Select Campus</option>
+            <option value="" disabled>Please select a campus</option>
             {CAMPUSES.map(campus => (
               <option key={campus.id} value={campus.id}>{campus.name}</option>
             ))}
           </select>
           {errors.campus && (
-            <p className="text-red-500 text-sm mt-1">{errors.campus}</p>
+            <motion.p 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-red-500 text-sm"
+            >
+              {errors.campus}
+            </motion.p>
           )}
-
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2 text-gray-600">Program</label>
-          
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Program
+          </label>
           <select
             required
             name="program"
-            value={undefined}
+            value={formData.program}
             onChange={handleChange}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-              errors.program ? 'border-red-500' : ''
-            }`}
+            className={`
+              w-full bg-white p-2.5 rounded-md
+              border border-gray-300 shadow-sm
+              focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
+              ${errors.program ? 'border-red-500 focus:border-red-500' : ''}
+            `}
           >
-            <option value="">Select Program</option>
+            <option value="" disabled>Please select a program</option>
             {programs.map(program => (
-                <option key={program.id} value={program.id}>
-                  {program.description}
-                </option>
-              ))}
+              <option key={program.id} value={program.id}>
+                {program.description}
+              </option>
+            ))}
           </select>
           {errors.program && (
-            <p className="text-red-500 text-sm mt-1">{errors.program}</p>
+            <motion.p 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-red-500 text-sm"
+            >
+              {errors.program}
+            </motion.p>
           )}
-
-          
         </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2 text-gray-600">Year Level</label>
-          
+  
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Year Level
+          </label>
           <select
             required
             name="year_level"
             value={formData.year_level}
             onChange={handleChange}
-            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
-              errors.year_level ? 'border-red-500' : ''
-            }`}
+            className={`
+              w-full bg-white p-2.5 rounded-md
+              border border-gray-300 shadow-sm
+              focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
+              ${errors.year_level ? 'border-red-500 focus:border-red-500' : ''}
+            `}
           >
             <option value="">Select Year Level</option>
             {yearLevels.map(year => (
@@ -690,51 +903,65 @@ export default function EnrollmentForm() {
             ))}
           </select>
           {errors.year_level && (
-            <p className="text-red-500 text-sm mt-1">{errors.year_level}</p>
+            <motion.p 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-red-500 text-sm"
+            >
+              {errors.year_level}
+            </motion.p>
           )}
-
         </div>
-
-        <div className="flex items-center">
+  
+        <div className="flex items-center gap-2">
           <input
             type="checkbox"
             name="is_transferee"
             checked={formData.is_transferee}
             onChange={handleChange}
-            className="mr-2 h-4 w-4 text-blue-600"
+            className="w-4 h-4 text-[#1A2A5B] border-gray-300 rounded 
+              focus:ring-[#1A2A5B]/20 shadow-sm"
           />
-          <label className="text-sm text-gray-600">I am a transferee student</label>
-          {errors.is_transferee && (
-            <p className="text-red-500 text-sm mt-1">{errors.is_transferee}</p>
-          )}
+          <label className="text-sm text-gray-700">
+            I am a transferee student
+          </label>
         </div>
       </div>
-
-      <div className="flex gap-4">
+  
+      <div className="flex gap-4 pt-4">
         <Button
           onClick={() => setCurrentStep(1)}
-          className="w-1/2 bg-gray-500 text-white hover:bg-gray-600"
-          disabled={isLoading}
+          className="w-1/2 bg-gray-500 hover:bg-gray-600 text-white"
+          disabled={isSubmitting || isSubmitted}
         >
           Previous Step
         </Button>
         <Button
-          onClick={() => setShowConfirmDialog(true)}
-          className="w-1/2 bg-blue-600 text-white hover:bg-blue-700"
-          disabled={isLoading}
+          onClick={() => !isSubmitting && !isSubmitted && setShowConfirmDialog(true)}
+          className="w-1/2 bg-[#D44D00] hover:bg-[#B33F00] text-white"
+          disabled={isSubmitting || isSubmitted}
         >
-          {isLoading ? (
+          {isSubmitted ? (
+            <>
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Submitted
+            </>
+          ) : isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Processing...
             </>
           ) : (
-            'Submit Enrollment'
+            <>
+              Submit Enrollment
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </>
           )}
         </Button>
       </div>
-    </div>
-  )
+    </motion.div>
+  );
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 py-12">

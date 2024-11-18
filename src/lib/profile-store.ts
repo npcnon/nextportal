@@ -28,12 +28,15 @@ export interface ProfileData {
     profile: {
       student_info: StudentProfile;
     };
+    fulldata_applicant_id: number;
 }
 
 interface StudentProfileStore {
     profileData: ProfileData;
+    isLoadingProfile: boolean; // Add loading state
     setProfile: (update: ((prev: ProfileData) => ProfileData) | ProfileData) => void;
-    clearProfile: () => void; // Add clearProfile to the interface
+    clearProfile: () => void;
+    setLoading: (loading: boolean) => void; // Add setter for loading state
 }
 
 // Create initial state as a constant for reuse
@@ -61,11 +64,13 @@ const initialProfileState: ProfileData = {
             created_at: '',
         },
     },
+    fulldata_applicant_id:0,
 };
 
 export const useStudentProfileStore = create<StudentProfileStore>()(
     devtools((set) => ({
         profileData: initialProfileState,
+        isLoadingProfile: true, // Initialize as true if data needs to be loaded
         
         setProfile: (update) => {
             console.log("setProfile is triggered");
@@ -76,6 +81,7 @@ export const useStudentProfileStore = create<StudentProfileStore>()(
                 console.log(newStudentProfile);
                 return {
                     profileData: newStudentProfile,
+                    isLoadingProfile: false // Set loading to false when data is set
                 };
             });
         },
@@ -83,8 +89,13 @@ export const useStudentProfileStore = create<StudentProfileStore>()(
         clearProfile: () => {
             console.log("clearProfile is triggered");
             set(() => ({
-                profileData: initialProfileState
+                profileData: initialProfileState,
+                isLoadingProfile: true // Reset loading state when clearing
             }));
+        },
+
+        setLoading: (loading: boolean) => {
+            set(() => ({ isLoadingProfile: loading }));
         }
     }))
 );

@@ -1617,18 +1617,18 @@ const StudentRegistrationForm: React.FC = () => {
   }, [profileData, methods]);
 
 
+  //TODO: implement student already enlisted
+  //TODO: add subject enlistment prerequisite filter
+  //TODO: show grades
 
-  //TODO: make the whole component restart when clicking submit thus loads
-  //TODO: make the subject enlistment
-  //TODO: fix year level
-  //TODO: make officially enrolled say something that documents and enlistment are already verified and submitted
-  //TODO: fix document upload types and whatnot
-  // Create the submit handler using handleSubmit from useForm
+
+
+
 
 const handleFormSubmit = async (data: StudentFormData) => {
     setIsSubmitting(true);
     try {
-      const response = await axios.post('https://djangoportal-backends.onrender.com/api/full-student-data/', data);
+      const response = await axios.post('http://127.0.0.1:8000/api/full-student-data/', data);
       
       toast({
         title: "Success!",
@@ -1742,7 +1742,7 @@ const handleFormSubmit = async (data: StudentFormData) => {
 
       setIsSubmitting(true);
       const response = await axios.post(
-        'https://djangoportal-backends.onrender.com/api/full-student-data/', 
+        'http://127.0.0.1:8000/api/full-student-data/', 
         currentValues
       );
       

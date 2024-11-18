@@ -1,69 +1,170 @@
-import axios from 'axios'
+import axios, { 
+  AxiosInstance, 
+  AxiosError, 
+  InternalAxiosRequestConfig,
+  AxiosResponse 
+} from 'axios'
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://djangoportal-backends.onrender.com/api/'
+interface TokenRefreshResponse {
+  access: string
+  refresh?: string
+}
 
-const apiClient = axios.create({
+interface RefreshSubscriber {
+  (token: string): void
+}
+
+// Custom error class for network issues
+export class NetworkError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'NetworkError'
+  }
+}
+
+// Custom error class for authentication issues
+export class AuthenticationError extends Error {
+  constructor(message: string = 'User is not logged in') {
+    super(message)
+    this.name = 'AuthenticationError'
+  }
+}
+
+const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/'
+
+const DEFAULT_TIMEOUT = 15000 // 15 seconds
+
+const apiClient: AxiosInstance = axios.create({
   baseURL,
+  timeout: DEFAULT_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
   },
 })
 
+let isRefreshing = false
+let refreshSubscribers: RefreshSubscriber[] = []
+
+const subscribeTokenRefresh = (callback: RefreshSubscriber): void => {
+  refreshSubscribers.push(callback)
+}
+
+const onTokenRefreshed = (token: string): void => {
+  refreshSubscribers.map(callback => callback(token))
+  refreshSubscribers = []
+}
+
+// Helper function to check if error is network related
+const isNetworkError = (error: AxiosError): boolean => {
+  return !error.response && Boolean(error.isAxiosError)
+}
+
+// Helper function to check if error is timeout related
+const isTimeoutError = (error: AxiosError): boolean => {
+  return error.code === 'ECONNABORTED'
+}
+
+// Helper function to get appropriate error message
+const getNetworkErrorMessage = (error: AxiosError): string => {
+  if (isTimeoutError(error)) {
+    return 'Request timed out. Please check your internet connection and try again.'
+  }
+  
+  if (error.message.includes('Network Error')) {
+    return 'Unable to connect to the server. Please check your internet connection.'
+  }
+  
+  return 'A network error occurred. Please try again later.'
+}
+
+// Helper function to check if user has a valid session
+const hasValidSession = (): boolean => {
+  return Boolean(localStorage.getItem('refresh_token'))
+}
+
 apiClient.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
+    // Check for refresh token first on protected routes
+    if (!config.url?.includes('/login') && !hasValidSession()) {
+      throw new AuthenticationError()
+    }
+
     const token = localStorage.getItem('access_token')
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
     }
     return config
   },
-  (error) => Promise.reject(error)
+  (error: AxiosError) => Promise.reject(error)
 )
 
 apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config
-
-    // Initialize retry count if it doesn't exist
-    if (originalRequest._retryCount === undefined) {
-      originalRequest._retryCount = 0
+  (response: AxiosResponse) => response,
+  async (error: AxiosError) => {
+    // Handle network errors first
+    if (isNetworkError(error)) {
+      const networkError = new NetworkError(getNetworkErrorMessage(error))
+      return Promise.reject(networkError)
     }
 
-    // Check if we should retry the request
-    const shouldRetry = 
-      error.response?.status === 401 && 
-      originalRequest._retryCount < 5 && 
-      !originalRequest.url?.includes('/login')
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+    
+    if (!originalRequest) {
+      return Promise.reject(error)
+    }
 
-    if (shouldRetry) {
-      originalRequest._retryCount++
-      console.log(`retrying... ${originalRequest._retryCount}`)
+    // Check for refresh token before attempting to refresh
+    if (
+      error.response?.status === 401 && 
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/login')
+    ) {
+      if (!hasValidSession()) {
+        clearAuthTokens()
+        return Promise.reject(new AuthenticationError())
+      }
+
+      if (isRefreshing) {
+        return new Promise(resolve => {
+          subscribeTokenRefresh(token => {
+            originalRequest.headers['Authorization'] = `Bearer ${token}`
+            resolve(apiClient(originalRequest))
+          })
+        })
+      }
+
+      originalRequest._retry = true
+      isRefreshing = true
+
       try {
         const refreshToken = localStorage.getItem('refresh_token')
-        const response = await axios.post(`${baseURL}refresh-token`, {
-          refresh: refreshToken,
-        })
+        const response = await axios.post<TokenRefreshResponse>(
+          `${baseURL}refresh-token`, 
+          { refresh: refreshToken },
+          { timeout: DEFAULT_TIMEOUT }
+        )
         
-        localStorage.setItem('access_token', response.data.access)
-        apiClient.defaults.headers['Authorization'] = `Bearer ${response.data.access}`
+        const newToken = response.data.access
+        localStorage.setItem('access_token', newToken)
+        apiClient.defaults.headers['Authorization'] = `Bearer ${newToken}`
         
-        // Retry the original request with the new token
+        onTokenRefreshed(newToken)
+        isRefreshing = false
+        
+        originalRequest.headers['Authorization'] = `Bearer ${newToken}`
         return apiClient(originalRequest)
       } catch (refreshError) {
-        // If we've exhausted all retries or refresh token is invalid
-        if (originalRequest._retryCount >= 5) {
-          clearAuthTokens()
-          return Promise.reject(refreshError)
+        clearAuthTokens()
+        isRefreshing = false
+        refreshSubscribers = []
+        
+        if (refreshError instanceof AxiosError && isNetworkError(refreshError)) {
+          return Promise.reject(
+            new NetworkError(getNetworkErrorMessage(refreshError))
+          )
         }
         
-        // If refresh failed but we still have retries left,
-        // wait a bit before trying again (exponential backoff)
-        const backoffDelay = Math.pow(2, originalRequest._retryCount) * 1000
-        await new Promise(resolve => setTimeout(resolve, backoffDelay))
-        
-        // Retry the refresh token process
-        return apiClient(originalRequest)
+        return Promise.reject(new AuthenticationError('Session expired. Please login again.'))
       }
     }
 
@@ -71,7 +172,7 @@ apiClient.interceptors.response.use(
   }
 )
 
-export const clearAuthTokens = () => {
+export const clearAuthTokens = (): void => {
   localStorage.removeItem('access_token')
   localStorage.removeItem('refresh_token')
 }

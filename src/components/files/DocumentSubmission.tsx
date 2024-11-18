@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, X, FileCheck, AlertCircle, Eye, Loader2 } from 'lucide-react';
+import { Upload, X, FileCheck, AlertCircle, Eye, Loader2, WifiOff } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
 import apiClient from '@/lib/axios';
+import { useErrorHandler } from '@/hooks/use-error-handler';
 
 type DocumentType = 
   | 'birth_certificate'
@@ -64,13 +65,13 @@ const DocumentSubmission = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<'pdf' | 'image' | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-
+  const { handleError, retryCount, resetRetryCount, isMaxRetries } = useErrorHandler();
   useEffect(() => {
     fetchDocuments();
   }, []);
 
   const fetchDocuments = async () => {
-    setIsFetching(true); // Set fetching to true
+    setIsFetching(true);
     try {
       const response = await apiClient.get('documents/');
       const documentMap: DocumentState = {};
@@ -79,11 +80,13 @@ const DocumentSubmission = () => {
       });
       setDocuments(documentMap);
     } catch (error) {
-      console.error('Error fetching documents:', error);
+      await handleError(error, fetchDocuments);
     } finally {
-      setIsFetching(false); // Fetching is done
+      setIsFetching(false);
     }
   };
+
+
 
   const handleFileUpload = async (documentType: DocumentType, file: File) => {
     if (documents[documentType]) {
@@ -121,12 +124,8 @@ const DocumentSubmission = () => {
       }));
       
       setUploadProgress(prev => ({ ...prev, [documentType]: 100 }));
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || error.message || 'Upload failed';
-      setErrors(prev => ({
-        ...prev,
-        [documentType]: errorMessage
-      }));
+    } catch (error: unknown) {
+      await handleError(error, () => handleFileUpload(documentType, file));
     } finally {
       setLoading(prev => ({ ...prev, [documentType]: false }));
       setTimeout(() => {
@@ -134,6 +133,37 @@ const DocumentSubmission = () => {
       }, 1000);
     }
   };
+
+  
+  if (isMaxRetries) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="flex flex-col items-center max-w-md text-center space-y-4">
+          <WifiOff className="h-12 w-12 text-gray-400" />
+          <h2 className="text-xl font-semibold">Connection Error</h2>
+          <p className="text-gray-600">
+            We're having trouble connecting to our servers. This might be due to:
+          </p>
+          <ul className="text-sm text-gray-500 list-disc text-left">
+            <li>Your internet connection</li>
+            <li>A temporary server issue</li>
+            <li>Your network firewall or security settings</li>
+          </ul>
+          <button
+            onClick={() => {
+              resetRetryCount();
+              fetchDocuments();
+            }}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
