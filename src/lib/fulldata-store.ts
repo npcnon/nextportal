@@ -165,7 +165,7 @@ export const useFullDataStore = create<StudentState & StudentActions>((set, get)
       const profileStore = useStudentProfileStore.getState();
       
       // Check if profile store is properly initialized
-      if (!profileStore.profileData || !profileStore.profileData.fulldata_applicant_id || profileStore.isLoading) {
+      if (!profileStore.profileData || !profileStore.profileData.fulldata_applicant_id || profileStore.isLoadingProfile) {
         console.log('Waiting for profile store to be initialized...');
         return;
       }
