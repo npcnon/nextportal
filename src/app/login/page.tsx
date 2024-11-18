@@ -1,7 +1,7 @@
 // app/login/page.tsx
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -31,7 +31,7 @@ const formSchema = z.object({
   remember: z.boolean().default(false),
 })
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
@@ -219,5 +219,14 @@ export default function LoginPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginPageContent />
+    </Suspense>
   )
 }
