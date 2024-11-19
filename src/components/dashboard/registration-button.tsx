@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Skeleton } from '@/components/ui/skeleton';
 
 type RegistrationStatus = 'required' | 'incomplete' | 'complete' | 'pending' | 'loading';
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
@@ -74,8 +75,8 @@ const statusConfig: Record<RegistrationStatus, StatusConfig> = {
     badgeStyle: "bg-[#D44D00] text-white border-none",
     iconStyle: "text-white/90",
   },
-  loading: {
-    icon: Loader2,
+ loading: {
+    icon: FileEdit, // We'll override this in the render method
     text: "Registration Processing",
     tooltip: "Your registration is being processed",
     badgeText: "Loading",
@@ -93,6 +94,17 @@ export const RegistrationButton: React.FC<RegistrationButtonProps> = ({
   onClick,
 }) => {
   const config = statusConfig[status];
+
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center space-x-4 w-full max-w-[300px]">
+        <Skeleton className="h-10 w-10 rounded-full" /> {/* Icon area */}
+        <Skeleton className="h-6 flex-1" /> {/* Text area */}
+        <Skeleton className="h-4 w-16" /> {/* Badge area */}
+      </div>
+    );
+  }
+
   const Icon = config.icon;
 
   return (
@@ -114,8 +126,7 @@ export const RegistrationButton: React.FC<RegistrationButtonProps> = ({
           >
             <Icon className={cn(
               "h-5 w-5",
-              config.iconStyle,
-              status === 'loading' && "animate-spin"
+              config.iconStyle
             )} />
             
             <span className="font-semibold tracking-wide">

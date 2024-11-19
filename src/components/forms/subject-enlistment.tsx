@@ -16,6 +16,7 @@ import { useStudentProfileStore } from '@/lib/profile-store';
 import { Loader2, RefreshCw } from "lucide-react";
 import apiClient from '@/lib/clients/authenticated-api-client';
 import { BookOpenCheck } from "lucide-react"; 
+import RegistrationRequiredNotice from '../dashboard/registration-notice';
 interface Program {
   id: number
   code: string
@@ -67,7 +68,7 @@ interface Course {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
-  program: number | null;
+  program: number;
   department_id: number | null;
 }
 
@@ -96,6 +97,7 @@ interface Semester {
   semester_name: string
   school_year: string
 }
+
 export const SubjectEnlistment = () => {
   const { toast } = useToast();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -107,65 +109,56 @@ export const SubjectEnlistment = () => {
   const { 
     personal_data,
     academic_background,
+    isLoading
   } = useFullDataStore();
   const profileData = useStudentProfileStore(state => state.profileData);
-  
 
-
-  const { program, year_level, semester_entry } = academic_background[0];
   useEffect(() => {
-    if (academic_background?.[0]) {
+    // Only fetch schedules if all conditions are met
+    if (
+      !isLoading && 
+      personal_data && 
+      personal_data.length > 0 && 
+      personal_data[0].status === 'initially enrolled' &&
+      academic_background?.[0] &&
+      profileData?.profile?.student_info?.campus
+    ) {
       fetchSchedules();
     }
-  }, [academic_background, program, year_level, semester_entry]);
-
-    // Return early if no academic background
-    if (!academic_background?.[0]) {
-      return null;
-    }
-
+  }, [isLoading, personal_data, academic_background, profileData]);
 
   const fetchSchedules = async () => {
     setFetchingSchedules(true);
-    let retries = 3;
     
-    while (retries > 0) {
-      try {
-        const semester_response = await apiClient.get(`semester/?campus_id=${profileData.profile.student_info.campus}`);
-        const semesters = semester_response.data.results;
-        setSemester(semesters);
-  
-        const response = await apiClient.get(`schedules/`, {
-          params: {
-            program_id: program,
-            year_level: year_level,
-            semester_id: semester_entry
-          }
-        });
-        
-        setSchedules(response.data.schedules || []);
-        break;
-      } catch (error) {
-        retries--;
-        if (retries === 0) {
-          if (axios.isAxiosError(error) && error.response?.status !== 404) {
-            toast({
-              title: "Error",
-              description: "Failed to load available schedules. Please try again.",
-              variant: "destructive",
-            });
-          }
-          setSchedules([]);
-        } else {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
+    try {
+      const { program, year_level, semester_entry } = academic_background[0];
+      
+      const semester_response = await apiClient.get(`semester/?campus_id=${profileData.profile.student_info.campus}`);
+      const semesters = semester_response.data.results;
+      setSemester(semesters);
+
+      const response = await apiClient.get(`schedules/`, {
+        params: {
+          program_id: program,
+          year_level: year_level,
+          semester_id: semester_entry
         }
+      });
+      
+      setSchedules(response.data.schedules || []);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status !== 404) {
+        toast({
+          title: "Error",
+          description: "Failed to load available schedules. Please try again.",
+          variant: "destructive",
+        });
       }
+      setSchedules([]);
+    } finally {
+      setFetchingSchedules(false);
     }
-    setFetchingSchedules(false);
   };
-
-  
-
 
   const handleSelectSubject = (scheduleId: number) => {
     setSelectedSubjects(prev => 
@@ -209,7 +202,7 @@ export const SubjectEnlistment = () => {
     
       await apiClient.post('enlisted-students/', {
         fulldata_applicant_id: applicant_id,
-        semester_id: semester_entry
+        semester_id: academic_background[0].semester_entry
       });
     } catch (error) {
       toast({
@@ -224,9 +217,7 @@ export const SubjectEnlistment = () => {
 
   const SubjectTableSkeleton = () => (
     <div className="space-y-4">
-      {/* Table Skeleton */}
       <div className="border border-indigo-100 rounded-xl overflow-hidden">
-        {/* Header */}
         <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4">
           <div className="grid grid-cols-7 gap-4">
             {[...Array(7)].map((_, i) => (
@@ -235,7 +226,6 @@ export const SubjectEnlistment = () => {
           </div>
         </div>
         
-        {/* Rows */}
         {[...Array(5)].map((_, i) => (
           <div key={i} className="border-t border-indigo-100 p-4">
             <div className="grid grid-cols-7 gap-4">
@@ -248,6 +238,22 @@ export const SubjectEnlistment = () => {
       </div>
     </div>
   );
+
+  // If global loading is happening
+  if (isLoading) {
+    return <SubjectTableSkeleton />;
+  }
+
+  // If student is not initially enrolled
+  if (personal_data && personal_data.length > 0 && personal_data[0].status !== 'initially enrolled') {
+    return <RegistrationRequiredNotice />;
+  }
+
+  // If no academic background
+  if (!academic_background || academic_background.length === 0) {
+    return <SubjectTableSkeleton />;
+  }
+
   return (
     <Card className="w-full bg-gradient-to-br from-white to-blue-50 border-none shadow-lg">
       <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-[#1A2A5B] to-[#2a3c6d] text-white rounded-t-xl p-6">
@@ -285,7 +291,7 @@ export const SubjectEnlistment = () => {
           </>
         )}
       </CardHeader>
-      
+
       <CardContent className="p-6">
         {fetchingSchedules ? (
           <SubjectTableSkeleton />

@@ -203,18 +203,22 @@ export const DashboardHeader = () => {
   
                       <div className="flex items-center gap-4">
                         <div className="relative w-12 h-12">
-                          {isLoadingPicture ? (
-                            <div className="w-12 h-12 rounded-full bg-blue-100 animate-pulse" />
-                          ) : profilePicture?.temporary_url ? (
-                            <img
-                              src={profilePicture.temporary_url}
-                              alt="Profile"
-                              className="w-12 h-12 rounded-full object-cover ring-2 ring-[#1A2A5B]"
-                              onError={() => setProfilePicture(null)}
-                            />
-                          ) : (
-                            <UserCircle className="w-12 h-12 text-white" />
-                          )}
+                        {isLoadingPicture ? (
+                          <div className="w-12 h-12 rounded-full bg-blue-100 animate-pulse" />
+                        ) : profilePicture?.temporary_url ? (
+                          <img
+                            src={profilePicture.temporary_url}
+                            alt="Profile"
+                            className="w-12 h-12 rounded-full object-cover ring-2 ring-[#1A2A5B]"
+                            onError={() => setProfilePicture(null)}
+                          />
+                        ) : (
+                          <img 
+                            src="/img/blank-profile.png" 
+                            alt="Blank Profile" 
+                            className="w-12 h-12 rounded-full object-cover text-white" 
+                          />
+                        )}
                         </div>
                         <div className="flex flex-col">
                           <span className="font-semibold text-white">{fullName}</span>
@@ -306,18 +310,22 @@ export const DashboardHeader = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center space-x-2 text-white hover:bg-gray-600">
                     <div className="relative w-8 h-8">
-                      {isLoadingPicture ? (
-                        <div className="w-8 h-8 rounded-full bg-white/20 animate-pulse" />
-                      ) : profilePicture?.temporary_url ? (
-                        <img
-                          src={profilePicture.temporary_url}
-                          alt="Profile"
-                          className="w-8 h-8 rounded-full object-cover ring-2 ring-white/30"
-                          onError={() => setProfilePicture(null)}
-                        />
-                      ) : (
-                        <UserCircle className="w-8 h-8" />
-                      )}
+                        {isLoadingPicture ? (
+                          <div className="w-8 h-8 rounded-full bg-white/20 animate-pulse" />
+                        ) : profilePicture?.temporary_url ? (
+                          <img
+                            src={profilePicture.temporary_url}
+                            alt="Profile"
+                            className="w-8 h-8 rounded-full object-cover ring-2 ring-white/30"
+                            onError={() => setProfilePicture(null)}
+                          />
+                        ) : (
+                          <img 
+                            src="/img/blank-profile.png" 
+                            alt="Blank Profile" 
+                            className="w-8 h-8 rounded-full object-cover" 
+                          />
+                        )}
                     </div>
                     <span>{fullName}</span>
                   </Button>

@@ -41,7 +41,7 @@ export const StatusCards: React.FC = () => {
   const { toast } = useToast();
   const totalRequiredDocuments = 5;
   
-  const { personal_data, isInitialized } = useFullDataStore();
+  const { personal_data, isLoading } = useFullDataStore();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -108,7 +108,7 @@ export const StatusCards: React.FC = () => {
   };
 
   // Show skeletons if either documents are loading or fulldata is not initialized
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-3 mb-6">
         <CardSkeleton />

@@ -50,11 +50,7 @@ const MountedComponents = {
 
     return (
       <div style={{ display: show ? 'block' : 'none' }}>
-        {personal_data && personal_data.length > 0 && 
-         personal_data[0].status === 'initially enrolled' 
-          ? <SubjectEnlistment />
-          : <RegistrationRequiredNotice />
-        }
+        <SubjectEnlistment />
       </div>
     );
   },
@@ -95,54 +91,53 @@ export default function StudentDashboard(): JSX.Element {
   const { isLoading, isInitialized, personal_data } = useFullDataStore();
   const [activeTab, setActiveTab] = useState<'enlistment' | 'requirements' | 'payment'>('enlistment');
   const {isLoadingProfile} = useStudentProfileStore();
-  const [isMounting, setIsMounting] = useState(true);
 
   // Add useEffect to handle the initial mounting state
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsMounting(false);
-    }, 1000); // You can adjust this timeout as needed
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     setIsMounting(false);
+  //   }, 2000); // You can adjust this timeout as needed
 
-    return () => clearTimeout(timer);
-  }, []);
+  //   return () => clearTimeout(timer);
+  // }, []);
 
-  //TODO: fix loading stuff
-  if (isMounting || (isLoading && isLoadingProfile)) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white">
-        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-          {/* Skeleton loading state */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="space-y-1">
-              <Skeleton className="h-8 w-64" />
-              <Skeleton className="h-4 w-48" />
-            </div>
-            <Skeleton className="h-10 w-32" />
-          </div>
+  // //TODO: fix loading stuff
+  // if (isMounting || isLoading || isLoadingProfile) {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white">
+  //       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+  //         {/* Skeleton loading state */}
+  //         <div className="mb-8 flex items-center justify-between">
+  //           <div className="space-y-1">
+  //             <Skeleton className="h-8 w-64" />
+  //             <Skeleton className="h-4 w-48" />
+  //           </div>
+  //           <Skeleton className="h-10 w-32" />
+  //         </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-32 w-full rounded-xl" />
-            ))}
-          </div>
+  //         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+  //           {[1, 2, 3, 4].map((i) => (
+  //             <Skeleton key={i} className="h-32 w-full rounded-xl" />
+  //           ))}
+  //         </div>
 
-          <div className="mt-8 bg-white rounded-xl shadow-lg border border-[#1A2A5B]/20 overflow-hidden">
-            <div className="h-16 px-6 border-b border-[#1A2A5B]/20">
-              <div className="flex gap-4 h-full items-center">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-8 w-32" />
-                ))}
-              </div>
-            </div>
+  //         <div className="mt-8 bg-white rounded-xl shadow-lg border border-[#1A2A5B]/20 overflow-hidden">
+  //           <div className="h-16 px-6 border-b border-[#1A2A5B]/20">
+  //             <div className="flex gap-4 h-full items-center">
+  //               {[1, 2, 3].map((i) => (
+  //                 <Skeleton key={i} className="h-8 w-32" />
+  //               ))}
+  //             </div>
+  //           </div>
             
-            <div className="p-6">
-              <Skeleton className="h-[400px] w-full rounded-xl" />
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  //           <div className="p-6">
+  //             <Skeleton className="h-[400px] w-full rounded-xl" />
+  //           </div>
+  //         </div>
+  //       </main>
+  //     </div>
+  //   );
+  // }
   
   const handleTabChange = (value: string) => {
     // Type guard to ensure value is TabValue
