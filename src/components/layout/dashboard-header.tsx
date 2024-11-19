@@ -61,7 +61,6 @@ export const DashboardHeader = () => {
     setIsLoadingPicture 
   } = useHeader();
   const profileData = useStudentProfileStore((state) => state.profileData);
-  const clearProfile = useStudentProfileStore((state) => state.clearProfile);
   const fullName = profileData.name || 'Loading...';
 
 
@@ -141,7 +140,6 @@ export const DashboardHeader = () => {
       }
 
       clearAuthTokens();
-      clearProfile();
 
       toast({
         title: "Success!",
@@ -156,7 +154,6 @@ export const DashboardHeader = () => {
     } catch (error) {
       console.error('Logout error:', error);
       clearAuthTokens();
-      clearProfile();
       
       toast({
         title: "Note",

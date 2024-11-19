@@ -95,8 +95,19 @@ export default function StudentDashboard(): JSX.Element {
   const { isLoading, isInitialized, personal_data } = useFullDataStore();
   const [activeTab, setActiveTab] = useState<'enlistment' | 'requirements' | 'payment'>('enlistment');
   const {isLoadingProfile} = useStudentProfileStore();
+  const [isMounting, setIsMounting] = useState(true);
 
-  if (isLoading || isLoadingProfile) {
+  // Add useEffect to handle the initial mounting state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsMounting(false);
+    }, 1000); // You can adjust this timeout as needed
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  //TODO: fix loading stuff
+  if (isMounting || (isLoading && isLoadingProfile)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white">
         <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
