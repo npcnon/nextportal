@@ -111,7 +111,7 @@ export const SubjectEnlistment = () => {
     academic_background,
     isLoading
   } = useFullDataStore();
-  const profileData = useStudentProfileStore(state => state.profileData);
+  const {profileData, isLoadingProfile} = useStudentProfileStore();
 
   useEffect(() => {
     // Only fetch schedules if all conditions are met
@@ -240,12 +240,13 @@ export const SubjectEnlistment = () => {
   );
 
   // If global loading is happening
-  if (isLoading) {
+  if (isLoading || isLoadingProfile) {
+    console.log("subject enlstment loading")
     return <SubjectTableSkeleton />;
   }
 
   // If student is not initially enrolled
-  if (personal_data && personal_data.length > 0 && personal_data[0].status !== 'initially enrolled') {
+  if (!(personal_data && personal_data.length > 0 && personal_data[0].status !== 'initially enrolled')) {
     return <RegistrationRequiredNotice />;
   }
 

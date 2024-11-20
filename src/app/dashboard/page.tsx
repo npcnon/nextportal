@@ -175,39 +175,51 @@ export default function StudentDashboard(): JSX.Element {
             defaultValue="enlistment" 
             className="space-y-4"
             onValueChange={handleTabChange}          >
-            <ScrollArea className="w-full border-b border-[#1A2A5B]/20">
-              <div className="px-6">
-                <TabsList className="h-16">
-                  <TabsTrigger 
-                    value="enlistment"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] data-[state=active]:to-[#1A2A5B] 
-                            data-[state=active]:text-white hover:bg-[#1A2A5B]/10 data-[state=active]:hover:from-[#1A2A5B] 
-                            data-[state=active]:hover:to-[#1A2A5B]/90 transition-all duration-300 px-6 gap-2"
-                  >
-                    <GraduationCap className="w-4 h-4" />
-                    Subject Enlistment
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="requirements"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] data-[state=active]:to-[#1A2A5B] 
-                            data-[state=active]:text-white hover:bg-[#1A2A5B]/10 data-[state=active]:hover:from-[#1A2A5B] 
-                            data-[state=active]:hover:to-[#1A2A5B]/90 transition-all duration-300 px-6 gap-2"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Requirements
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="payment"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] data-[state=active]:to-[#1A2A5B] 
-                            data-[state=active]:text-white hover:bg-[#1A2A5B]/10 data-[state=active]:hover:from-[#1A2A5B] 
-                            data-[state=active]:hover:to-[#1A2A5B]/90 transition-all duration-300 px-6 gap-2"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    Payment
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-            </ScrollArea>
+              {isLoading || isLoadingProfile? (
+                <ScrollArea className="w-full border-b border-[#1A2A5B]/20">
+                  <div className="px-6">
+                    <div className="h-16 flex items-center gap-2">
+                      <Skeleton className="h-10 w-40 rounded-md" />
+                      <Skeleton className="h-10 w-36 rounded-md" />
+                      <Skeleton className="h-10 w-32 rounded-md" />
+                    </div>
+                  </div>
+                </ScrollArea>
+              ) : (
+              <ScrollArea className="w-full border-b border-[#1A2A5B]/20">
+                <div className="px-6">
+                  <TabsList className="h-16">
+                    <TabsTrigger 
+                      value="enlistment"
+                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] data-[state=active]:to-[#1A2A5B] 
+                              data-[state=active]:text-white hover:bg-[#1A2A5B]/10 data-[state=active]:hover:from-[#1A2A5B] 
+                              data-[state=active]:hover:to-[#1A2A5B]/90 transition-all duration-300 px-6 gap-2"
+                    >
+                      <GraduationCap className="w-4 h-4" />
+                      Subject Enlistment
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="requirements"
+                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] data-[state=active]:to-[#1A2A5B] 
+                              data-[state=active]:text-white hover:bg-[#1A2A5B]/10 data-[state=active]:hover:from-[#1A2A5B] 
+                              data-[state=active]:hover:to-[#1A2A5B]/90 transition-all duration-300 px-6 gap-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Requirements
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="payment"
+                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] data-[state=active]:to-[#1A2A5B] 
+                              data-[state=active]:text-white hover:bg-[#1A2A5B]/10 data-[state=active]:hover:from-[#1A2A5B] 
+                              data-[state=active]:hover:to-[#1A2A5B]/90 transition-all duration-300 px-6 gap-2"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      Payment
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+              </ScrollArea>
+              )}
 
             <div className="p-6">
               {/* Render all components but only show the active one */}
