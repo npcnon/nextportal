@@ -1509,71 +1509,6 @@ const StudentRegistrationForm: React.FC = () => {
     defaultValues: formData,
     mode: "onSubmit",
   });
-  
-  const PersonalInfoSection = React.memo(({ show }: { show: boolean }) => {
-    if (!show) return null;
-    return (
-      <PersonalInfoForm 
-        formData={formData} 
-        setFormData={setFormData} 
-      />
-    );
-  });
-  PersonalInfoSection.displayName = 'PersonalInfoSection';
-
-  const ContactInfoSection = React.memo(({ show }: { show: boolean }) => {
-    if (!show) return null;
-    return (
-      <ContactInfoForm 
-        formData={formData} 
-        setFormData={setFormData} 
-      />
-    );
-  });
-  ContactInfoSection.displayName = 'ContactInfoSection';
-
-  const FamilyBackgroundSection = React.memo(({ show }: { show: boolean }) => {
-    if (!show) return null;
-    return (
-      <FamilyBackgroundForm 
-        formData={formData} 
-        setFormData={setFormData} 
-      />
-    );
-  });
-  FamilyBackgroundSection.displayName = 'FamilyBackgroundSection';
-
-  const AcademicInfoSection = React.memo(({ show }: { show: boolean }) => {
-    if (!show) return null;
-    return (
-      <div>
-        <AcademicBackgroundForm 
-          formData={formData} 
-          setFormData={setFormData}
-          programs={programs}
-          semesters={semesters}
-          isLoading={isLoadingAcademicData}
-        />
-        <AcademicHistoryForm 
-          formData={formData} 
-          setFormData={setFormData} 
-        />
-      </div>
-    );
-  });
-  AcademicInfoSection.displayName = 'AcademicInfoSection';
-
-  const FormSections = useMemo(() => ({
-    PersonalInfo: PersonalInfoSection,
-    ContactInfo: ContactInfoSection,
-    FamilyBackground: FamilyBackgroundSection,
-    AcademicInfo: AcademicInfoSection
-  }), [
-    PersonalInfoSection, 
-    ContactInfoSection, 
-    FamilyBackgroundSection, 
-    AcademicInfoSection
-  ]);
 
   useEffect(() => {
     if (semesters.length > 0 && !formData.academic_background.semester_entry) {
@@ -1703,44 +1638,9 @@ const handleFormSubmit = async (data: StudentFormData) => {
       setIsSubmitting(false);
     }
   };
-  const TabTriggers = useMemo(() => (
-    <ScrollArea className="w-full">
-      <TabsList className="w-full justify-start">
-        <TabsTrigger value="personal">Personal Info</TabsTrigger>
-        <TabsTrigger value="contact">Contact Info</TabsTrigger>
-        <TabsTrigger value="family">Family Background</TabsTrigger>
-        <TabsTrigger value="academic">Academic Info</TabsTrigger>
-      </TabsList>
-    </ScrollArea>
-  ), []);
-  
-  const SubmitButtons = useMemo(() => (
-    <div className="flex justify-end gap-4 pt-6">
-      <Button type="button" variant="outline">
-        Save as Draft
-      </Button>
-      <Button 
-        type="submit"
-        className="min-w-[100px]" 
-        disabled={isSubmitting}
-        onClick={() => methods.handleSubmit(handleFormSubmit)()}
-      >
-        {isSubmitting ? (
-          <div className="flex items-center justify-center">
-            <Loader size={20} className="mr-2" />
-            Submitting...
-          </div>
-        ) : (
-          <div className="flex items-center justify-center">
-            <Check className="mr-2" /> Submit Application
-          </div>
-        )}
-      </Button>
-    </div>
-  ), [isSubmitting, methods]);
 
 
-  
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4">
@@ -1778,31 +1678,32 @@ const handleFormSubmit = async (data: StudentFormData) => {
 
   return (
     <FormProvider {...methods}>
-    <div className="container mx-auto px-4">
-      <Card className="max-w-5xl mx-auto">
-        <CardContent>
-          <form onSubmit={methods.handleSubmit(handleFormSubmit)} noValidate>
-            <Tabs 
-              value={activeTab} 
-              onValueChange={setActiveTab} 
-              className="space-y-4"
-            >
-              {TabTriggers}
+      <div className="container mx-auto px-4">
+        <Card className="max-w-5xl mx-auto">
+          <CardContent>
+            <form onSubmit={methods.handleSubmit(handleFormSubmit)} noValidate>              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                <ScrollArea className="w-full">
+                  <TabsList className="w-full justify-start">
+                    <TabsTrigger value="personal">Personal Info</TabsTrigger>
+                    <TabsTrigger value="contact">Contact Info</TabsTrigger>
+                    <TabsTrigger value="family">Family Background</TabsTrigger>
+                    <TabsTrigger value="academic">Academic Info</TabsTrigger>
+                  </TabsList>
+                </ScrollArea>
 
-              <TabsContent value="personal">
-                <PersonalInfoForm formData={formData} setFormData={setFormData} />
-              </TabsContent>
+                <TabsContent value="personal">
+                  <PersonalInfoForm formData={formData} setFormData={setFormData} />
+                </TabsContent>
 
-              <TabsContent value="contact">
-                <ContactInfoForm formData={formData} setFormData={setFormData} />
-              </TabsContent>
+                <TabsContent value="contact">
+                  <ContactInfoForm formData={formData} setFormData={setFormData} />
+                </TabsContent>
 
-              <TabsContent value="family">
-                <FamilyBackgroundForm formData={formData} setFormData={setFormData} />
-              </TabsContent>
+                <TabsContent value="family">
+                  <FamilyBackgroundForm formData={formData} setFormData={setFormData} />
+                </TabsContent>
 
               <TabsContent value="academic">
-                <div>
                   <AcademicBackgroundForm 
                     formData={formData} 
                     setFormData={setFormData}
@@ -1814,17 +1715,37 @@ const handleFormSubmit = async (data: StudentFormData) => {
                     formData={formData} 
                     setFormData={setFormData} 
                   />
+                </TabsContent>
+                
+                <div className="flex justify-end gap-4 pt-6">
+                  <Button type="button" variant="outline">
+                    Save as Draft
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="min-w-[100px]" 
+                    disabled={isSubmitting}
+                    onClick={() => methods.handleSubmit(handleFormSubmit)()}
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center justify-center">
+                        <Loader size={20} className="mr-2" />
+                        Submitting...
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        <Check className="mr-2" /> Submit Application
+                      </div>
+                    )}
+                  </Button>
                 </div>
-              </TabsContent>
-
-              {SubmitButtons}
-            </Tabs>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  </FormProvider>
-);
+              </Tabs>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </FormProvider>
+  );
 };
 
 export default StudentRegistrationForm;
