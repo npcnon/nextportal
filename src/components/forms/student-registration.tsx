@@ -337,7 +337,6 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Memoize the fetch function
   const fetchAcademicData = useCallback(async (campus: number) => {
     setIsLoading(true);
     try {
@@ -346,18 +345,15 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
         apiClient.get(`semester/?campus_id=${campus}`),
       ]);
 
-      // Prevent unnecessary state updates if data hasn't changed
-      setPrograms(prev => 
-        JSON.stringify(prev) === JSON.stringify(programsResponse.data.results) 
-          ? prev 
-          : programsResponse.data.results
-      );
+      setPrograms(prev => {
+        const newPrograms = programsResponse.data.results;
+        return JSON.stringify(prev) === JSON.stringify(newPrograms) ? prev : newPrograms;
+      });
       
-      setSemesters(prev => 
-        JSON.stringify(prev) === JSON.stringify(semestersResponse.data.results) 
-          ? prev 
-          : semestersResponse.data.results
-      );
+      setSemesters(prev => {
+        const newSemesters = semestersResponse.data.results;
+        return JSON.stringify(prev) === JSON.stringify(newSemesters) ? prev : newSemesters;
+      });
     } catch (error) {
       console.error('Failed to fetch data:', error);
       toast({
@@ -368,24 +364,23 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]); // Add dependencies here
+  }, [toast]);
 
-  // Memoize the effect
   useEffect(() => {
     if (campusId) {
       fetchAcademicData(campusId);
     } else {
       setIsLoading(false);
     }
-  }, [campusId, fetchAcademicData]); // Add fetchAcademicData to dependencies
+  }, [campusId, fetchAcademicData]);
 
-  // Memoize the return value to prevent unnecessary re-renders
   return useMemo(() => ({
     programs, 
     semesters, 
     isLoading
   }), [programs, semesters, isLoading]);
 };
+
 
 const PersonalInfoForm: React.FC<InfoFormProps> = ({ formData, setFormData }) => {
   const profileData = useStudentProfileStore(state => state.profileData);
@@ -1515,53 +1510,70 @@ const StudentRegistrationForm: React.FC = () => {
     mode: "onSubmit",
   });
   
+  const PersonalInfoSection = React.memo(({ show }: { show: boolean }) => {
+    if (!show) return null;
+    return (
+      <PersonalInfoForm 
+        formData={formData} 
+        setFormData={setFormData} 
+      />
+    );
+  });
+  PersonalInfoSection.displayName = 'PersonalInfoSection';
+
+  const ContactInfoSection = React.memo(({ show }: { show: boolean }) => {
+    if (!show) return null;
+    return (
+      <ContactInfoForm 
+        formData={formData} 
+        setFormData={setFormData} 
+      />
+    );
+  });
+  ContactInfoSection.displayName = 'ContactInfoSection';
+
+  const FamilyBackgroundSection = React.memo(({ show }: { show: boolean }) => {
+    if (!show) return null;
+    return (
+      <FamilyBackgroundForm 
+        formData={formData} 
+        setFormData={setFormData} 
+      />
+    );
+  });
+  FamilyBackgroundSection.displayName = 'FamilyBackgroundSection';
+
+  const AcademicInfoSection = React.memo(({ show }: { show: boolean }) => {
+    if (!show) return null;
+    return (
+      <div>
+        <AcademicBackgroundForm 
+          formData={formData} 
+          setFormData={setFormData}
+          programs={programs}
+          semesters={semesters}
+          isLoading={isLoadingAcademicData}
+        />
+        <AcademicHistoryForm 
+          formData={formData} 
+          setFormData={setFormData} 
+        />
+      </div>
+    );
+  });
+  AcademicInfoSection.displayName = 'AcademicInfoSection';
+
   const FormSections = useMemo(() => ({
-    PersonalInfo: React.memo(({ show }: { show: boolean }) => {
-      if (!show) return null;
-      return (
-        <PersonalInfoForm 
-          formData={formData} 
-          setFormData={setFormData} 
-        />
-      );
-    }),
-    ContactInfo: React.memo(({ show }: { show: boolean }) => {
-      if (!show) return null;
-      return (
-        <ContactInfoForm 
-          formData={formData} 
-          setFormData={setFormData} 
-        />
-      );
-    }),
-    FamilyBackground: React.memo(({ show }: { show: boolean }) => {
-      if (!show) return null;
-      return (
-        <FamilyBackgroundForm 
-          formData={formData} 
-          setFormData={setFormData} 
-        />
-      );
-    }),
-    AcademicInfo: React.memo(({ show }: { show: boolean }) => {
-      if (!show) return null;
-      return (
-        <div>
-          <AcademicBackgroundForm 
-            formData={formData} 
-            setFormData={setFormData}
-            programs={programs}
-            semesters={semesters}
-            isLoading={isLoadingAcademicData}
-          />
-          <AcademicHistoryForm 
-            formData={formData} 
-            setFormData={setFormData} 
-          />
-        </div>
-      );
-    })
-  }), [formData, programs, semesters, isLoadingAcademicData]);
+    PersonalInfo: PersonalInfoSection,
+    ContactInfo: ContactInfoSection,
+    FamilyBackground: FamilyBackgroundSection,
+    AcademicInfo: AcademicInfoSection
+  }), [
+    PersonalInfoSection, 
+    ContactInfoSection, 
+    FamilyBackgroundSection, 
+    AcademicInfoSection
+  ]);
 
   useEffect(() => {
     if (semesters.length > 0 && !formData.academic_background.semester_entry) {
@@ -1727,6 +1739,8 @@ const handleFormSubmit = async (data: StudentFormData) => {
     </div>
   ), [isSubmitting, methods]);
 
+
+  
   if (isLoading) {
     return (
       <div className="container mx-auto px-4">
