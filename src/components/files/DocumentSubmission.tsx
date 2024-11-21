@@ -63,6 +63,7 @@ const DocumentSubmission = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
   const [previewType, setPreviewType] = useState<'pdf' | 'image' | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const { handleError, retryCount, resetRetryCount, isMaxRetries } = useErrorHandler();
@@ -176,10 +177,11 @@ const DocumentSubmission = () => {
     }
   };
 
-  const handlePreview = (url: string, filename: string) => {
+  const handlePreview = (url: string, document: Document) => {
     setPreviewUrl(url);
+    setPreviewDocument(document);
     // Check file type based on extension
-    const isPdf = filename.toLowerCase().endsWith('.pdf');
+    const isPdf = document.filename.toLowerCase().endsWith('.pdf');
     setPreviewType(isPdf ? 'pdf' : 'image');
     setIsPreviewOpen(true);
   };
@@ -221,7 +223,15 @@ const DocumentSubmission = () => {
       </div>
     );
   };
+  const MAX_FILENAME_LENGTH = 25;
 
+  const renderFilename = (filename: string): string => {
+    if (filename.length > MAX_FILENAME_LENGTH) {
+      return `${filename.slice(0, MAX_FILENAME_LENGTH - 3)}...`;
+    } else {
+      return filename;
+    }
+  };
   const renderDocumentCard = (documentType: DocumentType) => {
     const document = documents[documentType];
     const isLoading = loading[documentType];
@@ -257,7 +267,7 @@ const DocumentSubmission = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Filename:</span>
-                <span className="font-medium">{document.filename}</span>
+                <span className="font-medium">{renderFilename(document.filename)}</span>
               </div>
               
               <div className="flex items-center justify-between text-sm">
@@ -278,7 +288,7 @@ const DocumentSubmission = () => {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => handlePreview(document.temporary_url!, document.filename)}
+                  onClick={() => handlePreview(document.temporary_url!, document)}
                 >
                   <Eye className="w-4 h-4 mr-2" />
                   View Document
@@ -357,8 +367,10 @@ const DocumentSubmission = () => {
               <DialogTitle className="text-lg font-semibold">
                 Document Preview
               </DialogTitle>
-            </div>
-
+              <span className="text-sm text-muted-foreground">
+                {previewDocument?.filename}
+              </span>
+            </div>          
             {/* Content */}
             <div
               className={cn(

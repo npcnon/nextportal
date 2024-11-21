@@ -61,6 +61,7 @@ export const DashboardHeader = () => {
     setIsLoadingPicture 
   } = useHeader();
   const profileData = useStudentProfileStore((state) => state.profileData);
+  const clearProfile = useStudentProfileStore((state) => state.clearProfile);
   const fullName = profileData.name || 'Loading...';
 
 
@@ -139,8 +140,6 @@ export const DashboardHeader = () => {
         console.warn('Logout endpoint error:', error);
       }
 
-      clearAuthTokens();
-
       toast({
         title: "Success!",
         description: "You have been successfully logged out.",
@@ -151,10 +150,12 @@ export const DashboardHeader = () => {
       setIsNavigating(true);
       router.push('/login');
       
+      clearAuthTokens();
+      clearProfile();
     } catch (error) {
       console.error('Logout error:', error);
       clearAuthTokens();
-      
+      clearProfile();
       toast({
         title: "Note",
         description: "You have been logged out locally.",

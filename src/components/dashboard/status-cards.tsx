@@ -39,7 +39,7 @@ export const StatusCards: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
-  const totalRequiredDocuments = 5;
+  const totalRequiredDocuments = 8;
   
   const { personal_data, isLoading } = useFullDataStore();
 

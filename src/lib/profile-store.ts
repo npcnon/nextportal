@@ -34,6 +34,7 @@ export interface ProfileData {
 interface StudentProfileStore {
     profileData: ProfileData;
     isLoadingProfile: boolean; // Add loading state
+    iscleared: boolean;
     setProfile: (update: ((prev: ProfileData) => ProfileData) | ProfileData) => void;
     clearProfile: () => void;
     setLoading: (loading: boolean) => void; // Add setter for loading state
@@ -71,7 +72,7 @@ export const useStudentProfileStore = create<StudentProfileStore>()(
     devtools((set) => ({
         profileData: initialProfileState,
         isLoadingProfile: true, // Initialize as true if data needs to be loaded
-        
+        iscleared: false,
         setProfile: (update) => {
             console.log("setProfile is triggered");
             set(state => {
@@ -90,7 +91,8 @@ export const useStudentProfileStore = create<StudentProfileStore>()(
             console.log("clearProfile is triggered");
             set(() => ({
                 profileData: initialProfileState,
-                isLoadingProfile: true // Reset loading state when clearing
+                isLoadingProfile: true, // Reset loading state when clearing
+                iscleared: true
             }));
         },
 

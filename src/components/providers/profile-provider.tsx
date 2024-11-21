@@ -30,6 +30,7 @@ const RetryDescription = ({ retryCount, maxRetries }: { retryCount: number; maxR
 
 export function ProfileProvider({ children }: ProfileProviderProps) {
   const setProfile = useStudentProfileStore(state => state.setProfile);
+  const iscleared = useStudentProfileStore(state => state.iscleared);
   const fetchStudentData = useFullDataStore(state => state.fetchStudentData);
   const router = useRouter();
   const profileData = useStudentProfileStore(state => state.profileData);
@@ -112,8 +113,10 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
         });
       }
     };
-
-    fetchProfile();
+    if(!iscleared)
+    {
+      fetchProfile();
+    }
   }, [setProfile, fetchStudentData, router, retryCount, profileData.fulldata_applicant_id, toast]);
 
   if (retryCount >= MAX_RETRIES) {

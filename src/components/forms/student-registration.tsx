@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -337,8 +337,8 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchAcademicData = async (campus: number) => {
-
+  // Memoize the fetch function
+  const fetchAcademicData = useCallback(async (campus: number) => {
     setIsLoading(true);
     try {
       const [programsResponse, semestersResponse] = await Promise.all([
@@ -346,8 +346,18 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
         apiClient.get(`semester/?campus_id=${campus}`),
       ]);
 
-      setPrograms(programsResponse.data.results);
-      setSemesters(semestersResponse.data.results);
+      // Prevent unnecessary state updates if data hasn't changed
+      setPrograms(prev => 
+        JSON.stringify(prev) === JSON.stringify(programsResponse.data.results) 
+          ? prev 
+          : programsResponse.data.results
+      );
+      
+      setSemesters(prev => 
+        JSON.stringify(prev) === JSON.stringify(semestersResponse.data.results) 
+          ? prev 
+          : semestersResponse.data.results
+      );
     } catch (error) {
       console.error('Failed to fetch data:', error);
       toast({
@@ -358,19 +368,24 @@ const useAcademicData = ({ campusId }: UseAcademicDataProps) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]); // Add dependencies here
 
+  // Memoize the effect
   useEffect(() => {
     if (campusId) {
       fetchAcademicData(campusId);
     } else {
       setIsLoading(false);
     }
-  }, [campusId]);
+  }, [campusId, fetchAcademicData]); // Add fetchAcademicData to dependencies
 
-  return { programs, semesters, isLoading };
+  // Memoize the return value to prevent unnecessary re-renders
+  return useMemo(() => ({
+    programs, 
+    semesters, 
+    isLoading
+  }), [programs, semesters, isLoading]);
 };
-
 
 const PersonalInfoForm: React.FC<InfoFormProps> = ({ formData, setFormData }) => {
   const profileData = useStudentProfileStore(state => state.profileData);
@@ -1218,37 +1233,25 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
           />
 
           {/* Entry Year */}
-          <Controller
+          <RequiredFormField
+            type="select"
             name="academic_background.year_entry"
+            label="Entry Year"
             control={control}
-            defaultValue={formData.academic_background.year_entry}
-            render={({ field }) => (
-              <RequiredFormField
-                type="select"
-                name="academic_background.year_entry"
-                label="Entry Year"
-                control={control}
-                options={yearOptions}
-                defaultValue={field.value?.toString()}
-              />
-            )}
+            options={yearOptions}
+            defaultValue={formData.academic_background.year_entry.toString()}
+            parse={(value) => parseInt(value)}
           />
 
           {/* Expected Graduation Year */}
-          <Controller
+          <RequiredFormField
+            type="select"
             name="academic_background.year_graduate"
+            label="Entry Year"
             control={control}
-            defaultValue={formData.academic_background.year_graduate}
-            render={({ field }) => (
-              <RequiredFormField
-                type="select"
-                name="academic_background.year_graduate"
-                label="Expected Graduation Year"
-                control={control}
-                options={yearOptions}
-                defaultValue={field.value?.toString()}
-              />
-            )}
+            options={yearOptions}
+            defaultValue={formData.academic_background.year_graduate.toString()}
+            parse={(value) => parseInt(value)}
           />
         </div>
       </CardContent>
@@ -1511,6 +1514,54 @@ const StudentRegistrationForm: React.FC = () => {
     defaultValues: formData,
     mode: "onSubmit",
   });
+  
+  const FormSections = useMemo(() => ({
+    PersonalInfo: React.memo(({ show }: { show: boolean }) => {
+      if (!show) return null;
+      return (
+        <PersonalInfoForm 
+          formData={formData} 
+          setFormData={setFormData} 
+        />
+      );
+    }),
+    ContactInfo: React.memo(({ show }: { show: boolean }) => {
+      if (!show) return null;
+      return (
+        <ContactInfoForm 
+          formData={formData} 
+          setFormData={setFormData} 
+        />
+      );
+    }),
+    FamilyBackground: React.memo(({ show }: { show: boolean }) => {
+      if (!show) return null;
+      return (
+        <FamilyBackgroundForm 
+          formData={formData} 
+          setFormData={setFormData} 
+        />
+      );
+    }),
+    AcademicInfo: React.memo(({ show }: { show: boolean }) => {
+      if (!show) return null;
+      return (
+        <div>
+          <AcademicBackgroundForm 
+            formData={formData} 
+            setFormData={setFormData}
+            programs={programs}
+            semesters={semesters}
+            isLoading={isLoadingAcademicData}
+          />
+          <AcademicHistoryForm 
+            formData={formData} 
+            setFormData={setFormData} 
+          />
+        </div>
+      );
+    })
+  }), [formData, programs, semesters, isLoadingAcademicData]);
 
   useEffect(() => {
     if (semesters.length > 0 && !formData.academic_background.semester_entry) {
@@ -1640,8 +1691,41 @@ const handleFormSubmit = async (data: StudentFormData) => {
       setIsSubmitting(false);
     }
   };
-
-
+  const TabTriggers = useMemo(() => (
+    <ScrollArea className="w-full">
+      <TabsList className="w-full justify-start">
+        <TabsTrigger value="personal">Personal Info</TabsTrigger>
+        <TabsTrigger value="contact">Contact Info</TabsTrigger>
+        <TabsTrigger value="family">Family Background</TabsTrigger>
+        <TabsTrigger value="academic">Academic Info</TabsTrigger>
+      </TabsList>
+    </ScrollArea>
+  ), []);
+  
+  const SubmitButtons = useMemo(() => (
+    <div className="flex justify-end gap-4 pt-6">
+      <Button type="button" variant="outline">
+        Save as Draft
+      </Button>
+      <Button 
+        type="submit"
+        className="min-w-[100px]" 
+        disabled={isSubmitting}
+        onClick={() => methods.handleSubmit(handleFormSubmit)()}
+      >
+        {isSubmitting ? (
+          <div className="flex items-center justify-center">
+            <Loader size={20} className="mr-2" />
+            Submitting...
+          </div>
+        ) : (
+          <div className="flex items-center justify-center">
+            <Check className="mr-2" /> Submit Application
+          </div>
+        )}
+      </Button>
+    </div>
+  ), [isSubmitting, methods]);
 
   if (isLoading) {
     return (
@@ -1683,64 +1767,20 @@ const handleFormSubmit = async (data: StudentFormData) => {
       <div className="container mx-auto px-4">
         <Card className="max-w-5xl mx-auto">
           <CardContent>
-            <form onSubmit={methods.handleSubmit(handleFormSubmit)} noValidate>              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <ScrollArea className="w-full">
-                  <TabsList className="w-full justify-start">
-                    <TabsTrigger value="personal">Personal Info</TabsTrigger>
-                    <TabsTrigger value="contact">Contact Info</TabsTrigger>
-                    <TabsTrigger value="family">Family Background</TabsTrigger>
-                    <TabsTrigger value="academic">Academic Info</TabsTrigger>
-                  </TabsList>
-                </ScrollArea>
+            <form onSubmit={methods.handleSubmit(handleFormSubmit)} noValidate>
+              <Tabs 
+                value={activeTab} 
+                onValueChange={setActiveTab} 
+                className="space-y-4"
+              >
+                {TabTriggers}
 
-                <TabsContent value="personal">
-                  <PersonalInfoForm formData={formData} setFormData={setFormData} />
-                </TabsContent>
+                <FormSections.PersonalInfo show={activeTab === "personal"} />
+                <FormSections.ContactInfo show={activeTab === "contact"} />
+                <FormSections.FamilyBackground show={activeTab === "family"} />
+                <FormSections.AcademicInfo show={activeTab === "academic"} />
 
-                <TabsContent value="contact">
-                  <ContactInfoForm formData={formData} setFormData={setFormData} />
-                </TabsContent>
-
-                <TabsContent value="family">
-                  <FamilyBackgroundForm formData={formData} setFormData={setFormData} />
-                </TabsContent>
-
-              <TabsContent value="academic">
-                  <AcademicBackgroundForm 
-                    formData={formData} 
-                    setFormData={setFormData}
-                    programs={programs}
-                    semesters={semesters}
-                    isLoading={isLoadingAcademicData}
-                  />
-                  <AcademicHistoryForm 
-                    formData={formData} 
-                    setFormData={setFormData} 
-                  />
-                </TabsContent>
-                
-                <div className="flex justify-end gap-4 pt-6">
-                  <Button type="button" variant="outline">
-                    Save as Draft
-                  </Button>
-                  <Button 
-                    type="submit"
-                    className="min-w-[100px]" 
-                    disabled={isSubmitting}
-                    onClick={() => methods.handleSubmit(handleFormSubmit)()}
-                  >
-                    {isSubmitting ? (
-                      <div className="flex items-center justify-center">
-                        <Loader size={20} className="mr-2" />
-                        Submitting...
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center">
-                        <Check className="mr-2" /> Submit Application
-                      </div>
-                    )}
-                  </Button>
-                </div>
+                {SubmitButtons}
               </Tabs>
             </form>
           </CardContent>
