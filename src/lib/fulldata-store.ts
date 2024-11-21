@@ -126,6 +126,7 @@ interface StudentState {
   isInitialized: boolean; 
   isLoading: boolean;
   error: string | null;
+  isEnlistedThisSemester: boolean;
 }
 
 interface StudentActions {
@@ -139,6 +140,19 @@ interface StudentActions {
   updatePersonalData: (data: Partial<PersonalData>) => Promise<void>;
   resetStore: () => void;
 }
+
+interface EnlistedStudent {
+  id: number;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  semester_id: number;
+  fulldata_applicant_id: number;
+}
+
+
+
 const initialState: StudentState = {
   personal_data: [],
   add_personal_data: [],
@@ -148,6 +162,7 @@ const initialState: StudentState = {
   isInitialized: false, 
   isLoading: false,
   error: null,
+  isEnlistedThisSemester: false,
 };
 
 
@@ -178,9 +193,40 @@ export const useFullDataStore = create<StudentState & StudentActions>((set, get)
       const response = await apiClient.get(
         `full-student-data/?filter=fulldata_applicant_id=${fullDataApplicantId}`
       );
+        try {
+          console.log(`fulldata applicant id: ${fullDataApplicantId}`)
+          const response = await apiClient.get<EnlistedStudent[]>(`enlisted-students/?filter=fulldata_applicant_id=${fullDataApplicantId}`);
+          const data = response.data;
+          
+          // Log the entire array
+          console.log('All enlisted students:', data);
+          
+          // Log specific student if found
+          const enrolledStudent = data.find(
+            (student: EnlistedStudent) => student.fulldata_applicant_id === fullDataApplicantId
+          );
+          
+          if (enrolledStudent) {
+            console.log('Found enrolled student:', enrolledStudent);
+            set({
+              isEnlistedThisSemester: true
+            });
+          } else {
+            console.log('No enrolled student found with ID:', fullDataApplicantId);
+            set({
+              isEnlistedThisSemester: false
+            });
+          }
+        } catch (error) {
+          console.error('Error checking enrolled student:', error);
+          set({
+            isEnlistedThisSemester: false
+          });
+        }
+      
       
       const data = await response.data;
-      console.log(`response data: ${JSON.stringify(data, null, 2)}`);
+      // console.log(`response data: ${JSON.stringify(data, null, 2)}`);
       
       set({
         personal_data: data.personal_data,

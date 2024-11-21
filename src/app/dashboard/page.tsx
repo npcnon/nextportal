@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SubjectEnlistment } from '@/components/forms/subject-enlistment';
 import DocumentSubmission from '@/components/files/DocumentSubmission';
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from '@/hooks/use-toast'
+
 import {
   Dialog,
   DialogContent,
@@ -22,6 +24,8 @@ import { useStudentProfileStore } from '@/lib/profile-store';
 import RegistrationRequiredNotice from '@/components/dashboard/registration-notice';
 import { GraduationCap, FileText, CreditCard } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
+import unauthenticatedApiClient from '@/lib/clients/unauthenticated-api-client';
+import EnrollmentCompletionNotice from '@/components/dashboard/enrollment-notice';
 
 // Types and interfaces
 interface PersonalData {
@@ -45,52 +49,61 @@ interface TabContentProps {
 
 
 // Mounted Components with TypeScript
-const MountedComponents = {
-  Enlistment: ({ show, personal_data }: MountedComponentProps) => {
 
-    return (
-      <div style={{ display: show ? 'block' : 'none' }}>
-        <SubjectEnlistment />
-      </div>
-    );
-  },
-
-  Requirements: ({ show, personal_data }: MountedComponentProps) => {
-
-    return (
-      <div style={{ display: show ? 'block' : 'none' }}>
-        <div className="space-y-6">
-          {personal_data && personal_data.length > 0 && 
-           personal_data[0].status === 'initially enrolled' 
-            ? <DocumentSubmission /> 
-            : <RegistrationRequiredNotice />
-          }
-        </div>
-      </div>
-    );
-  },
-
-  Payment: ({ show }: MountedComponentProps) => (
-    <div style={{ display: show ? 'block' : 'none' }}>
-      <TabContent className="text-[#1A2A5B]/70">
-        <div className="flex flex-col items-center justify-center py-12 space-y-4">
-          <CreditCard className="w-16 h-16 text-[#1A2A5B]/50" />
-          <h3 className="text-xl font-semibold text-[#1A2A5B]">
-            Payment Section Coming Soon
-          </h3>
-          <p className="text-[#1A2A5B]/70 max-w-md text-center">
-            We're working on bringing you a seamless payment experience. Check back soon!
-          </p>
-        </div>
-      </TabContent>
-    </div>
-  )
-};
 
 export default function StudentDashboard(): JSX.Element {
-  const { isLoading, isInitialized, personal_data } = useFullDataStore();
+  const { isLoading,isEnlistedThisSemester, isInitialized, personal_data = []} = useFullDataStore();
   const [activeTab, setActiveTab] = useState<'enlistment' | 'requirements' | 'payment'>('enlistment');
   const {isLoadingProfile} = useStudentProfileStore();
+  const [isLoadingCourse, setIsLoadingCourse] = useState(false);
+
+  const { toast } = useToast()
+  const MountedComponents = {
+    Enlistment: ({ show, personal_data = [] }: MountedComponentProps) => {
+      if (!Array.isArray(personal_data)) return null; // Add safety check
+      return (
+        <div style={{ display: show ? 'block' : 'none' }}>
+          {personal_data && personal_data.length > 0 && 
+             !isEnlistedThisSemester
+              ? <SubjectEnlistment /> 
+              : <EnrollmentCompletionNotice />
+            }
+          
+        </div>
+      );
+    },
+  
+    Requirements: ({ show, personal_data= [] }: MountedComponentProps) => {
+      if (!Array.isArray(personal_data)) return null; // Add safety check
+      return (
+        <div style={{ display: show ? 'block' : 'none' }}>
+          <div className="space-y-6">
+            {personal_data && personal_data.length > 0 && 
+             personal_data[0].status === 'initially enrolled' 
+              ? <DocumentSubmission /> 
+              : <RegistrationRequiredNotice />
+            }
+          </div>
+        </div>
+      );
+    },
+  
+    Payment: ({ show }: MountedComponentProps) => (
+      <div style={{ display: show ? 'block' : 'none' }}>
+        <TabContent className="text-[#1A2A5B]/70">
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <CreditCard className="w-16 h-16 text-[#1A2A5B]/50" />
+            <h3 className="text-xl font-semibold text-[#1A2A5B]">
+              Payment Section Coming Soon
+            </h3>
+            <p className="text-[#1A2A5B]/70 max-w-md text-center">
+              We're working on bringing you a seamless payment experience. Check back soon!
+            </p>
+          </div>
+        </TabContent>
+      </div>
+    )
+  };
 
   // Add useEffect to handle the initial mounting state
   // useEffect(() => {
@@ -157,7 +170,7 @@ export default function StudentDashboard(): JSX.Element {
           </div>
           <StudentRegistrationDialog 
             trigger={
-              isLoading || isLoadingProfile ? (
+              isLoading || isLoadingProfile || isLoadingCourse ? (
                 <RegistrationButton status="loading" />
               ) : personal_data.length === 0 ? (
                 <RegistrationButton status="required" />
@@ -175,7 +188,7 @@ export default function StudentDashboard(): JSX.Element {
             defaultValue="enlistment" 
             className="space-y-4"
             onValueChange={handleTabChange}          >
-              {isLoading || isLoadingProfile? (
+              {isLoading || isLoadingProfile || isLoadingCourse? (
                 <ScrollArea className="w-full border-b border-[#1A2A5B]/20">
                   <div className="px-6">
                     <div className="h-16 flex items-center gap-2">
@@ -225,11 +238,11 @@ export default function StudentDashboard(): JSX.Element {
               {/* Render all components but only show the active one */}
               <MountedComponents.Enlistment 
                 show={activeTab === 'enlistment'}
-                personal_data={personal_data}
+                personal_data={Array.isArray(personal_data) ? personal_data : []}
               />
               <MountedComponents.Requirements 
                 show={activeTab === 'requirements'}
-                personal_data={personal_data}
+                personal_data={Array.isArray(personal_data) ? personal_data : []}
               />
               <MountedComponents.Payment 
                 show={activeTab === 'payment'}
