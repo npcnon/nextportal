@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -240,8 +240,6 @@ export default function EnrollmentForm() {
     }
   };
   
-
-// Main submit handler
 const handleSubmit = async () => {
   if (!isEmailVerified) {
     toast({
@@ -276,15 +274,96 @@ const handleSubmit = async () => {
           router.push('/login');
         }, 1000);
       }
-    } catch (error) {
-      console.error('Enrollment submission failed:', error);
-      toast({
-        title: "Error",
-        description: "Failed to submit enrollment. Please try again.",
-        variant: "destructive",
-        className: "bg-red-500 text-white border-none shadow-none",
-
-      });
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('Enrollment submission failed:', error);
+        
+        if (error.response && error.response.data) {
+          const errorData = error.response.data;
+          
+          if (errorData.non_field_errors && errorData.non_field_errors.length > 0) {
+            const nonFieldError = errorData.non_field_errors[0];
+            
+            if (nonFieldError.includes('first_name, last_name must make a unique set')) {
+              toast({
+                title: "Duplicate Entry",
+                description: "A student with this exact name already exists in the system.",
+                variant: "destructive",
+                className: "bg-red-500 text-white border-none shadow-none",
+              });
+    
+              setErrors(prevErrors => ({
+                ...prevErrors,
+                first_name: "Name combination must be unique",
+                last_name: "Name combination must be unique"
+              }));
+            } else {
+              toast({
+                title: "Submission Error",
+                description: nonFieldError,
+                variant: "destructive",
+                className: "bg-red-500 text-white border-none shadow-none",
+              });
+            }
+          } 
+          else if (errorData.email && errorData.email.length > 0) {
+            const emailError = errorData.email[0];
+            
+            if (emailError.includes('already exists')) {
+              toast({
+                title: "Email Already Registered",
+                description: "This email is already in use. Please use a different email address.",
+                variant: "destructive",
+                className: "bg-red-500 text-white border-none shadow-none",
+              });
+    
+              setErrors(prevErrors => ({
+                ...prevErrors,
+                email: "Email is already registered"
+              }));
+            }
+          } 
+          else {
+            const errorMessages = Object.entries(errorData)
+              .flatMap(([field, messages]) => 
+                Array.isArray(messages) 
+                  ? messages.map(msg => `${field.charAt(0).toUpperCase() + field.slice(1)}: ${msg}`)
+                  : []
+              );
+    
+            if (errorMessages.length > 0) {
+              toast({
+                title: "Submission Errors",
+                description: errorMessages.join('; '),
+                variant: "destructive",
+                className: "bg-red-500 text-white border-none shadow-none",
+              });
+            } else {
+              toast({
+                title: "Submission Error",
+                description: "An error occurred during submission. Please try again.",
+                variant: "destructive",
+                className: "bg-red-500 text-white border-none shadow-none",
+              });
+            }
+          }
+        } else {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+            className: "bg-red-500 text-white border-none shadow-none",
+          });
+        }
+      } else {
+        toast({
+          title: "Unexpected Error",
+          description: String(error),
+          variant: "destructive",
+          className: "bg-red-500 text-white border-none shadow-none",
+        });
+      }
+      
       setIsSubmitting(false);
     }
   } catch (error) {
