@@ -1778,30 +1778,53 @@ const handleFormSubmit = async (data: StudentFormData) => {
 
   return (
     <FormProvider {...methods}>
-      <div className="container mx-auto px-4">
-        <Card className="max-w-5xl mx-auto">
-          <CardContent>
-            <form onSubmit={methods.handleSubmit(handleFormSubmit)} noValidate>
-              <Tabs 
-                value={activeTab} 
-                onValueChange={setActiveTab} 
-                className="space-y-4"
-              >
-                {TabTriggers}
+    <div className="container mx-auto px-4">
+      <Card className="max-w-5xl mx-auto">
+        <CardContent>
+          <form onSubmit={methods.handleSubmit(handleFormSubmit)} noValidate>
+            <Tabs 
+              value={activeTab} 
+              onValueChange={setActiveTab} 
+              className="space-y-4"
+            >
+              {TabTriggers}
 
-                <FormSections.PersonalInfo show={activeTab === "personal"} />
-                <FormSections.ContactInfo show={activeTab === "contact"} />
-                <FormSections.FamilyBackground show={activeTab === "family"} />
-                <FormSections.AcademicInfo show={activeTab === "academic"} />
+              <TabsContent value="personal">
+                <PersonalInfoForm formData={formData} setFormData={setFormData} />
+              </TabsContent>
 
-                {SubmitButtons}
-              </Tabs>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </FormProvider>
-  );
+              <TabsContent value="contact">
+                <ContactInfoForm formData={formData} setFormData={setFormData} />
+              </TabsContent>
+
+              <TabsContent value="family">
+                <FamilyBackgroundForm formData={formData} setFormData={setFormData} />
+              </TabsContent>
+
+              <TabsContent value="academic">
+                <div>
+                  <AcademicBackgroundForm 
+                    formData={formData} 
+                    setFormData={setFormData}
+                    programs={programs}
+                    semesters={semesters}
+                    isLoading={isLoadingAcademicData}
+                  />
+                  <AcademicHistoryForm 
+                    formData={formData} 
+                    setFormData={setFormData} 
+                  />
+                </div>
+              </TabsContent>
+
+              {SubmitButtons}
+            </Tabs>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  </FormProvider>
+);
 };
 
 export default StudentRegistrationForm;

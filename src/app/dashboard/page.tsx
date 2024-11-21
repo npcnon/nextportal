@@ -22,7 +22,6 @@ import { useStudentProfileStore } from '@/lib/profile-store';
 import RegistrationRequiredNotice from '@/components/dashboard/registration-notice';
 import { GraduationCap, FileText, CreditCard } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
-import unauthenticatedApiClient from '@/lib/clients/unauthenticated-api-client';
 
 // Types and interfaces
 interface PersonalData {
@@ -47,21 +46,16 @@ interface TabContentProps {
 
 // Mounted Components with TypeScript
 const MountedComponents = {
-  Enlistment: ({ show, personal_data = [] }: MountedComponentProps) => {
+  Enlistment: ({ show, personal_data }: MountedComponentProps) => {
 
     return (
       <div style={{ display: show ? 'block' : 'none' }}>
-        {personal_data && personal_data.length > 0 && 
-           personal_data[0].status === 'initially enrolled' 
-            ? <SubjectEnlistment /> 
-            : <RegistrationRequiredNotice />
-          }
-        
+        <SubjectEnlistment />
       </div>
     );
   },
 
-  Requirements: ({ show, personal_data= [] }: MountedComponentProps) => {
+  Requirements: ({ show, personal_data }: MountedComponentProps) => {
 
     return (
       <div style={{ display: show ? 'block' : 'none' }}>
@@ -94,39 +88,10 @@ const MountedComponents = {
 };
 
 export default function StudentDashboard(): JSX.Element {
-  const { isLoading, isInitialized, personal_data = []} = useFullDataStore();
+  const { isLoading, isInitialized, personal_data } = useFullDataStore();
   const [activeTab, setActiveTab] = useState<'enlistment' | 'requirements' | 'payment'>('enlistment');
   const {isLoadingProfile} = useStudentProfileStore();
-  const [isAlreadyEnrolledThisSemester, setIsAlreadyEnrolledThisSemester] = useState(false);
 
-    // useEffect(async() => {
-
-    //   try {
-    //     const response = await unauthenticatedApiClient.get(`program/?campus_id=${value}`);
-    //     const fetchedPrograms = response.data.results;
-  
-    //     setIsAlreadyEnrolledThisSemester(fetchedPrograms);
-    //     if (fetchedPrograms.length === 0) {
-    //       toast({
-    //         title: "No Programs Found",
-    //         description: "No programs are available for the selected campus.",
-    //         variant: "default",
-    //         className: "bg-blue-500 text-white border-none shadow-none",
-    //       });
-    //     }
-    //   } catch (error) {
-    //     console.error("Failed to fetch programs:", error);
-    //     toast({
-    //       title: "Error",
-    //       description: "Failed to load programs. Please try again.",
-    //       variant: "destructive",
-    //       className: "bg-red-500 text-white border-none shadow-none",
-    //     });
-    //   } finally {
-    //     setIsLoadingPrograms(false);
-    //   }
-    
-    // },[]);
   // Add useEffect to handle the initial mounting state
   // useEffect(() => {
   //   const timer = setTimeout(() => {
