@@ -199,11 +199,10 @@ export const useFullDataStore = create<StudentState & StudentActions>((set, get)
           `enlisted-students/?filter=fulldata_applicant_id=${fullDataApplicantId}`
         );
         const data = response.data;
-        
+        console.log(`enlisted students data: ${data}`)
         const enrolledStudent = data.find(
           (student: EnlistedStudent) => Number(student.fulldata_applicant_id) === Number(fullDataApplicantId)
         );
-        
         if (enrolledStudent) {
           console.log('Student is enrolled:', enrolledStudent);
           set({ isEnlistedThisSemester: true });

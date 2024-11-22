@@ -51,7 +51,7 @@ const DOCUMENT_LABELS: Record<DocumentType, string> = {
   high_school_diploma: 'High School Diploma',
   good_moral: 'Certificate of Good Moral',
   two_x_two_photo: '2x2 Photo',
-  certificate_of_transfer: 'Certificate of Transfer',
+  certificate_of_transfer: 'Signature',
   medical_certificate: 'Medical Certificate',
   profile: 'Profile Picture'
 };
