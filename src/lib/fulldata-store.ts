@@ -127,6 +127,7 @@ interface StudentState {
   isLoading: boolean;
   error: string | null;
   isEnlistedThisSemester: boolean;
+  
 }
 
 interface StudentActions {
