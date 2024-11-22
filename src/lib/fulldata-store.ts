@@ -127,6 +127,7 @@ interface StudentState {
   isLoading: boolean;
   error: string | null;
   isEnlistedThisSemester: boolean;
+  currentSemester: number | null; // Add this
   
 }
 
@@ -164,6 +165,7 @@ const initialState: StudentState = {
   isLoading: false,
   error: null,
   isEnlistedThisSemester: false,
+  currentSemester: null,
 };
 
 
@@ -175,6 +177,7 @@ export const useFullDataStore = create<StudentState & StudentActions>((set, get)
   setAcademicBackground: (data) => set({ academic_background: data }),
   setAcademicHistory: (data) => set({ academic_history: data }),
 
+// In the fetchStudentData function, modify the enlisted student check:
   fetchStudentData: async () => {
     try {
       // Get profile store state
@@ -187,37 +190,59 @@ export const useFullDataStore = create<StudentState & StudentActions>((set, get)
       }
 
       const fullDataApplicantId = profileStore.profileData.fulldata_applicant_id;
+      const campusId = profileStore.profileData.profile.student_info.campus;
       
       console.log(`FETCHING FULL DATA for ID: ${fullDataApplicantId}`);
       set({ isLoading: true, error: null });
       
-      const response = await apiClient.get(
+      // Fetch full student data
+      const fullDataResponse = await apiClient.get(
         `full-student-data/?filter=fulldata_applicant_id=${fullDataApplicantId}`
       );
+
+      // First fetch current semester
       try {
-        const response = await apiClient.get<EnlistedStudent[]>(
-          `enlisted-students/?filter=fulldata_applicant_id=${fullDataApplicantId}`
-        );
-        const data = response.data;
-        console.log(`enlisted students data: ${data}`)
-        const enrolledStudent = data.find(
-          (student: EnlistedStudent) => Number(student.fulldata_applicant_id) === Number(fullDataApplicantId)
-        );
-        if (enrolledStudent) {
-          console.log('Student is enrolled:', enrolledStudent);
-          set({ isEnlistedThisSemester: true });
-        } else {
-          console.log('Student is not enrolled for this semester');
+        const semesterResponse = await apiClient.get(`semester/?campus_id=${campusId}`);
+        const currentSemester = semesterResponse.data.results[0]?.id;
+        
+        if (!currentSemester) {
+          console.log('No active semester found');
           set({ isEnlistedThisSemester: false });
+        } else {
+          // Then check if student is enlisted for current semester
+          const enrolledResponse = await apiClient.get<EnlistedStudent[]>(
+            `enlisted-students/?filter=fulldata_applicant_id=${fullDataApplicantId}`
+          );
+          
+          const enrolledStudent = enrolledResponse.data.find(
+            (student: EnlistedStudent) => 
+              Number(student.fulldata_applicant_id) === Number(fullDataApplicantId) &&
+              Number(student.semester_id) === Number(currentSemester)
+          );
+
+          if (enrolledStudent) {
+            console.log('Student is enrolled for current semester:', enrolledStudent);
+            set({ 
+              isEnlistedThisSemester: true,
+              currentSemester: currentSemester 
+            });
+          } else {
+            console.log('Student is not enrolled for current semester');
+            set({ 
+              isEnlistedThisSemester: false,
+              currentSemester: currentSemester
+            });
+          }
         }
       } catch (error) {
         console.error('Error checking enrollment status:', error);
-        set({ isEnlistedThisSemester: false });
+        set({ 
+          isEnlistedThisSemester: false,
+          currentSemester: null
+        });
       }
       
-      
-      const data = await response.data;
-      // console.log(`response data: ${JSON.stringify(data, null, 2)}`);
+      const data = fullDataResponse.data;
       
       set({
         personal_data: data.personal_data,
@@ -247,19 +272,19 @@ export const useFullDataStore = create<StudentState & StudentActions>((set, get)
     }
   },
 
-  clearStudentData: async () => {
-    console.log("clearProfile is triggered");
-    set(() => ({
-      personal_data: [],
-      add_personal_data: [],
-      family_background: [],
-      academic_background: [],
-      academic_history: [],
-      isInitialized: false, 
-      isLoading: false,
-      error: null,
-    }));
-},
+    clearStudentData: async () => {
+      console.log("clearProfile is triggered");
+      set(() => ({
+        personal_data: [],
+        add_personal_data: [],
+        family_background: [],
+        academic_background: [],
+        academic_history: [],
+        isInitialized: false, 
+        isLoading: false,
+        error: null,
+      }));
+  },
 
   updatePersonalData: async (data) => {
     try {

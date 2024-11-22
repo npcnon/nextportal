@@ -246,7 +246,7 @@ export const SubjectEnlistment = () => {
   }
 //TODO: email already exist error
   // If student is not initially enrolled
-  if (!(personal_data && personal_data.length > 0) || personal_data[0].status !== 'initially enrolled') {
+  if (!(personal_data && personal_data.length > 0) || (personal_data[0].status !== 'initially enrolled' && personal_data[0].status !== 'officially enrolled')) {
     return <RegistrationRequiredNotice />;
   }
 
