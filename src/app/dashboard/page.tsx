@@ -64,9 +64,9 @@ export default function StudentDashboard(): JSX.Element {
       return (
         <div style={{ display: show ? 'block' : 'none' }}>
           {personal_data && personal_data.length > 0 && 
-             !isEnlistedThisSemester
-              ? <SubjectEnlistment /> 
-              : <EnrollmentCompletionNotice />
+             isEnlistedThisSemester
+              ?  <EnrollmentCompletionNotice />
+              : <SubjectEnlistment />
             }
           
         </div>

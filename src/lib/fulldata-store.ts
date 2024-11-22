@@ -193,36 +193,27 @@ export const useFullDataStore = create<StudentState & StudentActions>((set, get)
       const response = await apiClient.get(
         `full-student-data/?filter=fulldata_applicant_id=${fullDataApplicantId}`
       );
-        try {
-          console.log(`fulldata applicant id: ${fullDataApplicantId}`)
-          const response = await apiClient.get<EnlistedStudent[]>(`enlisted-students/?filter=fulldata_applicant_id=${fullDataApplicantId}`);
-          const data = response.data;
-          
-          // Log the entire array
-          console.log('All enlisted students:', data);
-          
-          // Log specific student if found
-          const enrolledStudent = data.find(
-            (student: EnlistedStudent) => student.fulldata_applicant_id === fullDataApplicantId
-          );
-          
-          if (enrolledStudent) {
-            console.log('Found enrolled student:', enrolledStudent);
-            set({
-              isEnlistedThisSemester: true
-            });
-          } else {
-            console.log('No enrolled student found with ID:', fullDataApplicantId);
-            set({
-              isEnlistedThisSemester: false
-            });
-          }
-        } catch (error) {
-          console.error('Error checking enrolled student:', error);
-          set({
-            isEnlistedThisSemester: false
-          });
+      try {
+        const response = await apiClient.get<EnlistedStudent[]>(
+          `enlisted-students/?filter=fulldata_applicant_id=${fullDataApplicantId}`
+        );
+        const data = response.data;
+        
+        const enrolledStudent = data.find(
+          (student: EnlistedStudent) => Number(student.fulldata_applicant_id) === Number(fullDataApplicantId)
+        );
+        
+        if (enrolledStudent) {
+          console.log('Student is enrolled:', enrolledStudent);
+          set({ isEnlistedThisSemester: true });
+        } else {
+          console.log('Student is not enrolled for this semester');
+          set({ isEnlistedThisSemester: false });
         }
+      } catch (error) {
+        console.error('Error checking enrollment status:', error);
+        set({ isEnlistedThisSemester: false });
+      }
       
       
       const data = await response.data;
