@@ -29,8 +29,8 @@ interface Semester {
   campus_id: number
   semester_name: string
   school_year: string
+  is_active: boolean;
 }
-
 interface Employee {
   id: number;
   role: string;
@@ -105,21 +105,34 @@ export const SubjectEnlistment = () => {
   const [fetchingSchedules, setFetchingSchedules] = useState<boolean>(true);
   const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
   const [available_semester, setSemester] = useState<Semester[]>([]);
-  
+
+  const [showEnlistment, setShowEnlistment] = useState<boolean>(false);
+  const formatTime = (time: string) => {
+    return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
   const { 
     personal_data,
     academic_background,
-    isLoading
+    isLoading,
+    currentSemester
   } = useFullDataStore();
   const {profileData, isLoadingProfile} = useStudentProfileStore();
-
+  useEffect(() => {
+    if (available_semester.length > 0 ) {
+      console.log(`available semester:${JSON.stringify(available_semester)}`);
+    }
+  }, [available_semester]);
   useEffect(() => {
     // Only fetch schedules if all conditions are met
     if (
       !isLoading && 
       personal_data && 
       personal_data.length > 0 && 
-      personal_data[0].status === 'initially enrolled' &&
+      personal_data[0].status != 'pending' && 
       academic_background?.[0] &&
       profileData?.profile?.student_info?.campus
     ) {
@@ -129,7 +142,7 @@ export const SubjectEnlistment = () => {
 
   const fetchSchedules = async () => {
     setFetchingSchedules(true);
-    
+    console.log('fetching schedules#################### ')
     try {
       const { program, year_level, semester_entry } = academic_background[0];
       
@@ -146,6 +159,8 @@ export const SubjectEnlistment = () => {
       });
       
       setSchedules(response.data.schedules || []);
+
+      console.log(`schedules: ${schedules}`)
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status !== 404) {
         toast({
@@ -199,7 +214,11 @@ export const SubjectEnlistment = () => {
         title: "Success",
         description: "Successfully submitted enlistment!",
       });
-    
+      setTimeout(() => {
+        window.location.href = window.location.href;
+        // OR
+        // window.location.replace(window.location.href);
+      }, 1500);
       await apiClient.post('enlisted-students/', {
         fulldata_applicant_id: applicant_id,
         semester_id: academic_background[0].semester_entry
@@ -254,6 +273,72 @@ export const SubjectEnlistment = () => {
   if (!academic_background || academic_background.length === 0) {
     return <SubjectTableSkeleton />;
   }
+
+const handleNewSemesterClick = async () => {
+    try {
+      const semesterResponse = await apiClient.get(`semester/`, {
+        params: { campus_id: profileData.profile.student_info.campus }
+      });
+      const activeSemester = semesterResponse.data.results.find((sem: Semester) => sem.is_active) || semesterResponse.data.results[0];
+
+
+      console.log(`fulldata applicant id: ${personal_data[0]?.fulldata_applicant_id}`)
+      console.log(`academic background ${academic_background[0].semester_entry} compared to current semester: ${currentSemester} is equal to: ${academic_background[0].semester_entry < activeSemester.id}`)
+
+      // This is just a placeholder POST request - replace with your actual endpoint
+      await axios.post('https://node-mysql-signup-verification-api.onrender.com/students/external/add-enrollment', {
+        "fulldata_applicant_id": personal_data[0]?.fulldata_applicant_id,
+        "semester_id": activeSemester.id,
+      });
+      
+      setShowEnlistment(true);
+      toast({
+        title: "Success",
+        description: "You can now proceed with subject enlistment.",
+      });
+      setTimeout(() => {
+        window.location.href = window.location.href;
+        // OR
+        // window.location.replace(window.location.href);
+      }, 1500);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process semester enrollment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // If student is not initially enrolled
+  if (!(personal_data && personal_data.length > 0) || (personal_data[0].status !== 'initially enrolled' && personal_data[0].status !== 'officially enrolled')) {
+    return <RegistrationRequiredNotice />;
+  }
+
+  // If no academic background
+  if (!academic_background || academic_background.length === 0) {
+    return <SubjectTableSkeleton />;
+  }
+
+  if (!showEnlistment && personal_data.length > 0 && currentSemester != undefined && academic_background[0].semester_entry < currentSemester ) {
+    return (
+      <Card className="w-full bg-gradient-to-br from-white to-blue-50 border-none shadow-lg">
+        <CardHeader className="flex flex-col items-center justify-center bg-gradient-to-r from-[#1A2A5B] to-[#2a3c6d] text-white rounded-t-xl p-12">
+          <CardTitle className="text-2xl font-bold tracking-tight mb-4">New Semester Available</CardTitle>
+          <p className="text-center text-gray-200 mb-6">
+            A new semester is now open for enrollment. Click below to start your subject enlistment process.
+          </p>
+          <Button
+            onClick={handleNewSemesterClick}
+            className="bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700 shadow-lg transition-all duration-300 font-semibold"
+          >
+            Start Subject Enlistment
+          </Button>
+        </CardHeader>
+      </Card>
+    );
+  }
+
 
   return (
     <Card className="w-full bg-gradient-to-br from-white to-blue-50 border-none shadow-lg">
@@ -340,7 +425,9 @@ export const SubjectEnlistment = () => {
                     >
                       <TableCell className="font-semibold text-[#1A2A5B]">{schedule.course.code}</TableCell>
                       <TableCell className="text-[#1A2A5B]/90">{schedule.course.description}</TableCell>
-                      <TableCell className="text-[#1A2A5B]/90">{`${schedule.day} ${schedule.time.start} - ${schedule.time.end}`}</TableCell>
+                      <TableCell className="text-[#1A2A5B]/90">
+                        {`${schedule.day} ${formatTime(schedule.time.start)} - ${formatTime(schedule.time.end)}`}
+                      </TableCell>                      
                       <TableCell className="text-[#1A2A5B]/90">{`${schedule.instructor.title} ${schedule.instructor.name}`}</TableCell>
                       <TableCell className="text-[#1A2A5B]/90">{schedule.room}</TableCell>
                       <TableCell className="text-[#1A2A5B]/90">{schedule.course.units}</TableCell>

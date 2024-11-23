@@ -79,7 +79,7 @@ export default function StudentDashboard(): JSX.Element {
         <div style={{ display: show ? 'block' : 'none' }}>
           <div className="space-y-6">
             {personal_data && personal_data.length > 0 && 
-             personal_data[0].status === 'initially enrolled' 
+             personal_data[0].status != 'pending' 
               ? <DocumentSubmission /> 
               : <RegistrationRequiredNotice />
             }
@@ -160,13 +160,14 @@ export default function StudentDashboard(): JSX.Element {
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white">
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 flex items-center justify-between">
+      <main className="max-w-7xl mx-auto py-4 sm:py-8 px-3 sm:px-6 lg:px-8">
+        {/* Responsive header section */}
+        <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 tracking-tight">
               Student Dashboard
             </h1>
-            <p className="text-gray-600">Manage your academic journey</p>
+            <p className="text-sm sm:text-base text-gray-600">Manage your academic journey</p>
           </div>
           <StudentRegistrationDialog 
             trigger={
@@ -183,48 +184,53 @@ export default function StudentDashboard(): JSX.Element {
 
         <StatusCards />
         
-        <div className="mt-8 bg-white rounded-xl shadow-lg border border-[#1A2A5B]/20 overflow-hidden">
+        {/* Responsive tabs container */}
+        <div className="mt-4 sm:mt-8 bg-white rounded-xl shadow-lg border border-[#1A2A5B]/20 overflow-hidden">
           <Tabs 
             defaultValue="enlistment" 
             className="space-y-4"
-            onValueChange={handleTabChange}          >
-              {isLoading || isLoadingProfile || isLoadingCourse? (
-                <ScrollArea className="w-full border-b border-[#1A2A5B]/20">
-                  <div className="px-6">
-                    <div className="h-16 flex items-center gap-2">
-                      <Skeleton className="h-10 w-40 rounded-md" />
-                      <Skeleton className="h-10 w-36 rounded-md" />
-                      <Skeleton className="h-10 w-32 rounded-md" />
-                    </div>
-                  </div>
-                </ScrollArea>
-              ) : (
+            onValueChange={handleTabChange}
+          >
+            {isLoading || isLoadingProfile || isLoadingCourse ? (
               <ScrollArea className="w-full border-b border-[#1A2A5B]/20">
-                <div className="px-6">
-                  <TabsList className="h-16">
+                <div className="px-3 sm:px-6">
+                  <div className="h-16 flex items-center gap-2">
+                    <Skeleton className="h-10 w-32 sm:w-40 rounded-md" />
+                    <Skeleton className="h-10 w-28 sm:w-36 rounded-md" />
+                    <Skeleton className="h-10 w-24 sm:w-32 rounded-md" />
+                  </div>
+                </div>
+              </ScrollArea>
+            ) : (
+              <ScrollArea className="w-full border-b border-[#1A2A5B]/20">
+                <div className="px-3 sm:px-6">
+                  <TabsList className="h-16 w-full flex flex-wrap justify-start sm:justify-start overflow-x-auto">
                     <TabsTrigger 
                       value="enlistment"
-                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] data-[state=active]:to-[#1A2A5B] 
-                              data-[state=active]:text-white hover:bg-[#1A2A5B]/10 data-[state=active]:hover:from-[#1A2A5B] 
-                              data-[state=active]:hover:to-[#1A2A5B]/90 transition-all duration-300 px-6 gap-2"
+                      className="flex-1 sm:flex-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] 
+                              data-[state=active]:to-[#1A2A5B] data-[state=active]:text-white hover:bg-[#1A2A5B]/10 
+                              data-[state=active]:hover:from-[#1A2A5B] data-[state=active]:hover:to-[#1A2A5B]/90 
+                              transition-all duration-300 px-3 sm:px-6 gap-2 text-sm sm:text-base"
                     >
                       <GraduationCap className="w-4 h-4" />
-                      Subject Enlistment
+                      <span className="hidden sm:inline">Subject</span> Enlistment
                     </TabsTrigger>
                     <TabsTrigger 
                       value="requirements"
-                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] data-[state=active]:to-[#1A2A5B] 
-                              data-[state=active]:text-white hover:bg-[#1A2A5B]/10 data-[state=active]:hover:from-[#1A2A5B] 
-                              data-[state=active]:hover:to-[#1A2A5B]/90 transition-all duration-300 px-6 gap-2"
+                      className="flex-1 sm:flex-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] 
+                              data-[state=active]:to-[#1A2A5B] data-[state=active]:text-white hover:bg-[#1A2A5B]/10 
+                              data-[state=active]:hover:from-[#1A2A5B] data-[state=active]:hover:to-[#1A2A5B]/90 
+                              transition-all duration-300 px-3 sm:px-6 gap-2 text-sm sm:text-base"
                     >
                       <FileText className="w-4 h-4" />
                       Requirements
                     </TabsTrigger>
                     <TabsTrigger 
                       value="payment"
-                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] data-[state=active]:to-[#1A2A5B] 
-                              data-[state=active]:text-white hover:bg-[#1A2A5B]/10 data-[state=active]:hover:from-[#1A2A5B] 
-                              data-[state=active]:hover:to-[#1A2A5B]/90 transition-all duration-300 px-6 gap-2"
+                      className="flex-1 sm:flex-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1A2A5B] 
+                              data-[state=active]:to-[#1A2A5B] data-[state=active]:text-white hover:bg-[#1A2A5B]/10 
+                              data-[state=active]:hover:from-[#1A2A5B] data-[state=active]:hover:to-[#1A2A5B]/90 
+                              transition-all duration-300 px-3 sm:px-6 gap-2 text-sm sm:text-base"
                     >
                       <CreditCard className="w-4 h-4" />
                       Payment
@@ -232,10 +238,10 @@ export default function StudentDashboard(): JSX.Element {
                   </TabsList>
                 </div>
               </ScrollArea>
-              )}
+            )}
 
-            <div className="p-6">
-              {/* Render all components but only show the active one */}
+            <div className="p-3 sm:p-6">
+              {/* [MountedComponents remain the same] */}
               <MountedComponents.Enlistment 
                 show={activeTab === 'enlistment'}
                 personal_data={Array.isArray(personal_data) ? personal_data : []}
@@ -254,23 +260,22 @@ export default function StudentDashboard(): JSX.Element {
     </div>
   );
 }
-
 const StudentRegistrationDialog: React.FC<StudentRegistrationDialogProps> = ({ trigger }) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="max-w-5xl h-[90vh] overflow-hidden bg-gradient-to-br from-white to-indigo-50/30 border border-indigo-100 shadow-xl">
-        <DialogHeader className="bg-gradient-to-r from-[#1A2A5B] to-[#142247] text-white p-4 rounded-t-lg mt-4">
-          <DialogTitle className="text-2xl font-bold tracking-tight">
+      <DialogContent className="max-w-[95vw] sm:max-w-5xl h-[90vh] overflow-hidden bg-gradient-to-br from-white to-indigo-50/30 border border-indigo-100 shadow-xl mx-2">
+        <DialogHeader className="bg-gradient-to-r from-[#1A2A5B] to-[#142247] text-white p-3 sm:p-4 rounded-t-lg mt-4">
+          <DialogTitle className="text-xl sm:text-2xl font-bold tracking-tight">
             Student Information
           </DialogTitle>
-          <DialogDescription className="text-indigo-100 mt-2">
+          <DialogDescription className="text-indigo-100 mt-2 text-sm sm:text-base">
             Please complete all required fields in the registration form below to proceed with your enrollment.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8">
           <StudentRegistrationForm />
         </div>
       </DialogContent>
@@ -279,7 +284,7 @@ const StudentRegistrationDialog: React.FC<StudentRegistrationDialogProps> = ({ t
 };
 
 const TabContent: React.FC<TabContentProps> = ({ children, className }) => (
-  <div className={`p-8 rounded-xl ${className}`}>
+  <div className={`p-4 sm:p-8 rounded-xl ${className}`}>
     {children}
   </div>
 );

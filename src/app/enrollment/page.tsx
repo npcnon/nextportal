@@ -406,7 +406,7 @@ const handleSubmit = async () => {
 
 const ConfirmationDialog = () => (
   <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-    <DialogContent className="sm:max-w-[500px] transform transition-all duration-500 hover:shadow-2xl bg-white overflow-hidden">
+    <DialogContent className="sm:max-w-[500px] w-[95vw] sm:w-full transform transition-all duration-500 hover:shadow-2xl bg-white overflow-hidden m-4">
       <div className="absolute inset-0 bg-[#1A2A5B]/5 pointer-events-none" />
       
       {/* Floating celebration icons that appear during submission */}
@@ -565,9 +565,9 @@ const ConfirmationDialog = () => (
       </div>
     </div>
 
-    <div className="grid md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
       <div className="space-y-2 transition-all duration-300 group">
-        <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
           First Name
         </label>
         <Input
@@ -576,7 +576,7 @@ const ConfirmationDialog = () => (
           value={formData.first_name}
           onChange={handleChange}
           className={`
-            w-full transition-all duration-300
+            w-full p-2 sm:p-2.5 text-sm sm:text-base
             border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
             ${errors.first_name ? 'border-red-500 focus:border-red-500' : ''}
           `}
@@ -593,8 +593,7 @@ const ConfirmationDialog = () => (
         )}
       </div>
       <div className="space-y-2 transition-all duration-300 group">
-        <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
-          Middle Name
+      <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">          Middle Name
         </label>
         <Input
           required
@@ -602,7 +601,7 @@ const ConfirmationDialog = () => (
           value={formData.middle_name}
           onChange={handleChange}
           className={`
-            w-full transition-all duration-300
+            w-full p-2 sm:p-2.5 text-sm sm:text-base
             border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
             ${errors.middle_name ? 'border-red-500 focus:border-red-500' : ''}
           `}
@@ -620,8 +619,7 @@ const ConfirmationDialog = () => (
       </div>
 
       <div className="space-y-2 transition-all duration-300 group">
-        <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
-          Last Name
+      <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">          Last Name
         </label>
         <Input
           required
@@ -629,7 +627,7 @@ const ConfirmationDialog = () => (
           value={formData.last_name}
           onChange={handleChange}
           className={`
-            w-full transition-all duration-300
+            w-full p-2 sm:p-2.5 text-sm sm:text-base
             border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
             ${errors.last_name ? 'border-red-500 focus:border-red-500' : ''}
           `}
@@ -647,8 +645,7 @@ const ConfirmationDialog = () => (
       </div>
 
       <div className="space-y-2 transition-all duration-300 group">
-        <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
-          Suffix Name
+      <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">          Suffix Name
         </label>
         <Input
           required
@@ -656,7 +653,7 @@ const ConfirmationDialog = () => (
           value={formData.suffix}
           onChange={handleChange}
           className={`
-            w-full transition-all duration-300
+            w-full p-2 sm:p-2.5 text-sm sm:text-base
             border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
             ${errors.suffix ? 'border-red-500 focus:border-red-500' : ''}
           `}
@@ -675,8 +672,7 @@ const ConfirmationDialog = () => (
 
 
         <div>
-        <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
-          Birth Date
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">          Birth Date
         </label>
           <Input
             required
@@ -685,7 +681,7 @@ const ConfirmationDialog = () => (
             value={formData.birth_date}
             onChange={handleChange}
             className={`
-              w-full transition-all duration-300
+              w-full p-2 sm:p-2.5 text-sm sm:text-base
               border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
               ${errors.birth_date ? 'border-red-500 focus:border-red-500' : ''}
             `}
@@ -704,8 +700,7 @@ const ConfirmationDialog = () => (
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 transition-colors duration-200">
-            Sex
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">            Sex
           </label>
           <select
             name="sex"
@@ -770,10 +765,9 @@ const ConfirmationDialog = () => (
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="space-y-2 transition-all duration-300 group">
-          <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
-            Email
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">            Email
           </label>
           <div className="flex gap-2">
             <Input
@@ -783,7 +777,7 @@ const ConfirmationDialog = () => (
               onChange={handleChange}
               disabled={isEmailVerificationSent}
               className={`
-                w-full transition-all duration-300
+                w-full p-2 sm:p-2.5 text-sm sm:text-base
                 border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
                 ${errors.email ? 'border-red-500 focus:border-red-500' : ''}
               `}
@@ -821,24 +815,23 @@ const ConfirmationDialog = () => (
               animate={{ opacity: 1, y: 0 }}
               className="mt-4 space-y-2"
             >
-              <label className="block text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">
-                Verification Code
+<label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">                Verification Code
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   required
                   name="email_verification_code"
                   value={formData.email_verification_code}
                   onChange={handleChange}
                   disabled={isEmailVerified}
-                  className="w-full transition-all duration-300 border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20"
+                  className="w-full p-2 sm:p-2.5 text-sm sm:text-base transition-all duration-300 border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20"
                   placeholder="Enter verification code"
                 />
                 <Button
                   onClick={handleVerificationCodeSubmit}
                   disabled={!formData.email_verification_code || isVerifyingCode || isEmailVerified}
-                  className="whitespace-nowrap bg-[#1A2A5B] text-white hover:bg-[#131F43] transition-all duration-300
-                    disabled:bg-gray-400 disabled:text-gray-200"
+                  className="whitespace-nowrap bg-[#1A2A5B] text-white hover:bg-[#131F43] transition-all duration-300 
+                  disabled:bg-gray-400 disabled:text-gray-200 w-full sm:w-auto"
                 >
                   {isVerifyingCode ? (
                     <>
@@ -857,8 +850,7 @@ const ConfirmationDialog = () => (
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Contact Number
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">            Contact Number
           </label>
           <Input
             required
@@ -885,8 +877,7 @@ const ConfirmationDialog = () => (
         </div>
   
         <div className="md:col-span-2 space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Address
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">            Address
           </label>
           <textarea
             required
@@ -915,8 +906,7 @@ const ConfirmationDialog = () => (
         </div>
   
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Campus
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">            Campus
           </label>
           <select
             required
@@ -947,8 +937,7 @@ const ConfirmationDialog = () => (
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Program
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">            Program
           </label>
           <div className="relative">
             <select
@@ -997,8 +986,7 @@ const ConfirmationDialog = () => (
 
   
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Year Level
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">            Year Level
           </label>
           <select
             required
@@ -1037,23 +1025,22 @@ const ConfirmationDialog = () => (
             className="w-4 h-4 text-[#1A2A5B] border-gray-300 rounded 
               focus:ring-[#1A2A5B]/20 shadow-sm"
           />
-          <label className="text-sm text-gray-700">
-            I am a transferee student
+<label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">            I am a transferee student
           </label>
         </div>
       </div>
   
-      <div className="flex gap-4 pt-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
         <Button
           onClick={() => setCurrentStep(1)}
-          className="w-1/2 bg-gray-500 hover:bg-gray-600 text-white"
+          className="w-full bg-gray-500 hover:bg-gray-600 text-white"
           disabled={isSubmitting || isSubmitted}
         >
           Previous Step
         </Button>
         <Button
           onClick={() => !isSubmitting && !isSubmitted && setShowConfirmDialog(true)}
-          className="w-1/2 bg-[#D44D00] hover:bg-[#B33F00] text-white"
+          className="w-full bg-[#D44D00] hover:bg-[#B33F00] text-white"
           disabled={isSubmitting || isSubmitted}
         >
           {isSubmitted ? (
@@ -1079,7 +1066,7 @@ const ConfirmationDialog = () => (
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 py-12">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 py-6 sm:py-12">
       {isNavigating && (
               <div className="fixed inset-0 z-50 bg-white/50 backdrop-blur-sm">
                 <div className="absolute top-0 left-0 w-full h-1">
@@ -1087,29 +1074,28 @@ const ConfirmationDialog = () => (
                 </div>
               </div>
       )}
-      <div className="container mx-auto px-4">
-        <Card className="max-w-3xl mx-auto p-8 shadow-lg">
-          <div className="mb-8 text-center">
-            <img 
-                src="/img/circlelogomod.png" 
-                alt="Benedicto College Logo" 
-                className="w-20 h-20 object-contain rounded-full mx-auto mb-4" 
-              />
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Student Enrollment Form</h1>
-            <p className="text-gray-600 mt-2">Please fill out all required fields to complete your enrollment</p>
-          </div>
+      <div className="container mx-auto px-4 sm:px-6">
+        <Card className="max-w-3xl mx-auto p-4 sm:p-8 shadow-lg">
+        <div className="mb-6 sm:mb-8 text-center">
+          <img 
+            src="/img/circlelogomod.png" 
+            alt="Benedicto College Logo" 
+            className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-full mx-auto mb-3 sm:mb-4" 
+          />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Student Enrollment Form</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-2">Please fill out all required fields to complete your enrollment</p>
+        </div>
 
-          <div className="mb-8">
-            <div className="flex justify-between items-center">
-              <div className={`h-1 w-1/2 transition-all duration-300 ${currentStep === 1 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-              <div className={`h-1 w-1/2 transition-all duration-300 ${currentStep === 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-            </div>
-            <div className="flex justify-between mt-2">
-              <span className="text-sm text-gray-600">Personal Information</span>
-              <span className="text-sm text-gray-600">Academic Details</span>
-            </div>
+        <div className="mb-6 sm:mb-8">
+          <div className="flex justify-between items-center">
+            <div className={`h-1 w-1/2 transition-all duration-300 ${currentStep === 1 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+            <div className={`h-1 w-1/2 transition-all duration-300 ${currentStep === 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
           </div>
-
+          <div className="flex justify-between mt-2">
+            <span className="text-xs sm:text-sm text-gray-600">Personal Information</span>
+            <span className="text-xs sm:text-sm text-gray-600">Academic Details</span>
+          </div>
+        </div>
           {currentStep === 1 ? renderStep1() : renderStep2()}
         </Card>
       </div>

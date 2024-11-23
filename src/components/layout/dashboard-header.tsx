@@ -186,79 +186,81 @@ export const DashboardHeader = () => {
       )}
   
       <nav className="sticky top-0 z-50 bg-[#1A2A5B] text-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center space-x-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex justify-between h-14 sm:h-16">
+            {/* Left Section */}
+            <div className="flex items-center">
+              {/* Mobile Menu Button */}
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="lg:hidden text-white hover:bg-white/10">
-                    <Menu className="h-6 w-6" />
+                  <Button variant="ghost" size="icon" className="md:hidden mr-2 sm:mr-4 text-white hover:bg-white/10">
+                    <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-80 p-0 bg-[#1A2A5B]">
+                <SheetContent side="left" className="w-[280px] sm:w-80 p-0 bg-[#1A2A5B]">
                   <div className="h-full flex flex-col">
-                    <div className="p-6 bg-gradient-to-r from-[#1A2A5B] to-[#0A1A3B]">
-                      <SheetHeader className="mb-6">
-                        <SheetTitle className="text-2xl font-bold text-white">Menu</SheetTitle>
+                    {/* Sheet Header */}
+                    <div className="p-4 sm:p-6 bg-gradient-to-r from-[#1A2A5B] to-[#0A1A3B]">
+                      <SheetHeader className="mb-4 sm:mb-6">
+                        <SheetTitle className="text-xl sm:text-2xl font-bold text-white">Menu</SheetTitle>
                       </SheetHeader>
   
-                      <div className="flex items-center gap-4">
-                        <div className="relative w-12 h-12">
-                        {isLoadingPicture ? (
-                          <div className="w-12 h-12 rounded-full bg-blue-100 animate-pulse" />
-                        ) : profilePicture?.temporary_url ? (
-                          <img
-                            src={profilePicture.temporary_url}
-                            alt="Profile"
-                            className="w-12 h-12 rounded-full object-cover ring-2 ring-[#1A2A5B]"
-                            onError={() => setProfilePicture(null)}
-                          />
-                        ) : (
-                          <img 
-                            src="/img/blank-profile.png" 
-                            alt="Blank Profile" 
-                            className="w-12 h-12 rounded-full object-cover text-white" 
-                          />
-                        )}
+                      {/* Profile Section in Sheet */}
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+                          {isLoadingPicture ? (
+                            <div className="w-full h-full rounded-full bg-blue-100 animate-pulse" />
+                          ) : profilePicture?.temporary_url ? (
+                            <img
+                              src={profilePicture.temporary_url}
+                              alt="Profile"
+                              className="w-full h-full rounded-full object-cover ring-2 ring-[#1A2A5B]"
+                              onError={() => setProfilePicture(null)}
+                            />
+                          ) : (
+                            <img 
+                              src="/img/blank-profile.png" 
+                              alt="Blank Profile" 
+                              className="w-full h-full rounded-full object-cover" 
+                            />
+                          )}
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-semibold text-white">{fullName}</span>
-                          <span className="text-sm text-gray-300">Student</span>
+                          <span className="font-semibold text-white text-sm sm:text-base">{fullName}</span>
+                          <span className="text-xs sm:text-sm text-gray-300">Student</span>
                         </div>
                       </div>
                     </div>
   
                     <Separator className="bg-gray-700" />
   
-                    {/* Mobile Navigation Items */}
+                    {/* Navigation Items in Sheet */}
                     <div className="flex-1 overflow-auto p-4">
-                    <div className="hidden lg:flex items-center space-x-1">
-                        {navigationItems.map((item) => (
-                          <Button
-                            key={item.path}
-                            variant={pathname === item.path ? "secondary" : "ghost"}
-                            className={`
-                              h-9 
-                              ${pathname === item.path 
-                                ? 'bg-white text-[#647441] hover:bg-[#8A9B61]' // Green when active, darker green on hover
-                                : 'text-white hover:bg-gray-600'}
-                            `}
-                            onClick={() => handleNavigation(item.path)}
-                            disabled={isNavigating}
-                          >
-                            {item.icon}
-                            <span className="ml-2">{item.name}</span>
-                          </Button>
-                        ))}
-                      </div>
+                      {navigationItems.map((item) => (
+                        <Button
+                          key={item.path}
+                          variant="ghost"
+                          className={`w-full justify-start mb-2 ${
+                            pathname === item.path 
+                              ? 'bg-white/10 text-white' 
+                              : 'text-gray-300 hover:text-white hover:bg-white/10'
+                          }`}
+                          onClick={() => handleNavigation(item.path)}
+                          disabled={isNavigating}
+                        >
+                          {item.icon}
+                          <span className="ml-2">{item.name}</span>
+                        </Button>
+                      ))}
                     </div>
   
                     <Separator className="bg-gray-700" />
   
+                    {/* Logout Button in Sheet */}
                     <div className="p-4">
                       <Button 
                         variant="destructive" 
-                        className="w-full bg-red-500 hover:bg-red-600"
+                        className="w-full bg-red-500 hover:bg-red-600 text-sm sm:text-base"
                         onClick={handleLogout}
                         disabled={isLoggingOut}
                       >
@@ -279,22 +281,29 @@ export const DashboardHeader = () => {
                 </SheetContent>
               </Sheet>
   
-              {/* Logo and Desktop Navigation */}
-              <div className="flex items-center">
-                <img 
-                  src="/img/square_logo.png" 
-                  alt="Logo" 
-                  className="h-40 w-40 object-contain -ml-6"
-                />
-                <h1 className="text-xl font-bold text-white ml-10">{getPageTitle()}</h1>
-              </div>
+             {/* Logo and Title - Adjusted logo size for mobile */}
+            <div className="flex items-center">
+              <img 
+                src="/img/square_logo.png" 
+                alt="Logo" 
+                className="h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 lg:h-40 lg:w-40 object-contain -ml-2 sm:-ml-4 lg:-ml-6"
+              />
+              <h1 className="text-lg sm:text-xl font-bold text-white ml-3 sm:ml-6 lg:ml-10 hidden sm:block">
+                {getPageTitle()}
+              </h1>
+            </div>
 
-              <div className="hidden lg:flex items-center space-x-1">
+              {/* Desktop Navigation */}
+              <div className="hidden lg:flex items-center space-x-1 ml-4">
                 {navigationItems.map((item) => (
                   <Button
                     key={item.path}
                     variant={pathname === item.path ? "secondary" : "ghost"}
-                    className={`h-9 ${pathname === item.path ? 'bg-white/90 text-[#1A2A5B] hover:bg-white' : 'text-white hover:bg-gray-600'}`}
+                    className={`h-9 ${
+                      pathname === item.path 
+                        ? 'bg-white/90 text-[#1A2A5B] hover:bg-white' 
+                        : 'text-white hover:bg-white/10'
+                    }`}
                     onClick={() => handleNavigation(item.path)}
                     disabled={isNavigating}
                   >
@@ -306,51 +315,51 @@ export const DashboardHeader = () => {
             </div>
   
             {/* Profile Dropdown */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2 text-white hover:bg-gray-600">
-                    <div className="relative w-8 h-8">
-                        {isLoadingPicture ? (
-                          <div className="w-8 h-8 rounded-full bg-white/20 animate-pulse" />
-                        ) : profilePicture?.temporary_url ? (
-                          <img
-                            src={profilePicture.temporary_url}
-                            alt="Profile"
-                            className="w-8 h-8 rounded-full object-cover ring-2 ring-white/30"
-                            onError={() => setProfilePicture(null)}
-                          />
-                        ) : (
-                          <img 
-                            src="/img/blank-profile.png" 
-                            alt="Blank Profile" 
-                            className="w-8 h-8 rounded-full object-cover" 
-                          />
-                        )}
+                  <Button variant="ghost" className="flex items-center space-x-2 text-white hover:bg-white/10">
+                    <div className="relative w-7 h-7 sm:w-8 sm:h-8">
+                      {isLoadingPicture ? (
+                        <div className="w-full h-full rounded-full bg-white/20 animate-pulse" />
+                      ) : profilePicture?.temporary_url ? (
+                        <img
+                          src={profilePicture.temporary_url}
+                          alt="Profile"
+                          className="w-full h-full rounded-full object-cover ring-2 ring-white/30"
+                          onError={() => setProfilePicture(null)}
+                        />
+                      ) : (
+                        <img 
+                          src="/img/blank-profile.png" 
+                          alt="Blank Profile" 
+                          className="w-full h-full rounded-full object-cover" 
+                        />
+                      )}
                     </div>
-                    <span>{fullName}</span>
+                    <span className="hidden sm:block text-sm sm:text-base">{fullName}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-[#ffffff] text-gray-200">
-                  <DropdownMenuLabel className="text-[#1A2A5B]">Account</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-48 sm:w-56 bg-white">
+                  <DropdownMenuLabel className="text-[#1A2A5B] text-sm sm:text-base">Account</DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-[#1A2A5B]" />
                   <DropdownMenuItem 
                     onClick={() => handleNavigation('/profile')} 
                     disabled={isNavigating || isLoggingOut}
-                    className="text-[#1A2A5B] hover:text-white hover:bg-gray-700"
+                    className="text-[#1A2A5B] hover:text-white hover:bg-[#1A2A5B] text-sm sm:text-base"
                   >
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => handleNavigation('/settings')}
                     disabled={isNavigating || isLoggingOut}
-                    className="text-[#1A2A5B] hover:text-white hover:bg-gray-700"
+                    className="text-[#1A2A5B] hover:text-white hover:bg-[#1A2A5B] text-sm sm:text-base"
                   >
                     Settings
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[#1A2A5B]" />
                   <DropdownMenuItem 
-                    className="text-red-500 hover:text-red-600 hover:bg-gray-700"
+                    className="text-red-500 hover:text-white hover:bg-red-500 text-sm sm:text-base"
                     onClick={handleLogout}
                     disabled={isNavigating || isLoggingOut}
                   >
