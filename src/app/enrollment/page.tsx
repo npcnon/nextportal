@@ -1068,11 +1068,11 @@ const ConfirmationDialog = () => (
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 py-6 sm:py-12">
       {isNavigating && (
-              <div className="fixed inset-0 z-50 bg-white/50 backdrop-blur-sm">
-                <div className="absolute top-0 left-0 w-full h-1">
-                  <div className="h-full bg-blue-600 animate-[loading_1s_ease-in-out_infinite]" />
-                </div>
+            <div className="fixed inset-0 z-50 bg-white/50 backdrop-blur-sm">
+              <div className="absolute top-0 left-0 w-full h-1">
+                <div className="h-full bg-orange-600 animate-[loading_1s_ease-in-out_infinite]" />
               </div>
+            </div>
       )}
       <div className="container mx-auto px-4 sm:px-6">
         <Card className="max-w-3xl mx-auto p-4 sm:p-8 shadow-lg">

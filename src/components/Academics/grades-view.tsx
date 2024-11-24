@@ -7,10 +7,12 @@ import {
   isGradeAvailable, 
   getGradeStatus,
   transformGradesData 
-} from './grade-types'; // Make sure this path matches your file structure
+} from './grade-types';
 import { useStudentProfileStore } from '@/lib/profile-store';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BookOpen } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 // API utility function
 const fetchStudentGrades = async (studentId: string) => {
@@ -32,29 +34,32 @@ const GradeStatusBadge: React.FC<{ status: 'pending' | 'graded' }> = ({ status }
   return (
     <Badge 
       variant={status === 'pending' ? 'secondary' : 'default'}
-      className={status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}
+      className={`
+        ${status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}
+        text-xs sm:text-sm
+      `}
     >
       {status === 'pending' ? 'Pending' : 'Graded'}
     </Badge>
   );
 };
 
-// Individual Subject Grade Component
+// Updated Subject Grade Component
 const SubjectGrade: React.FC<{ entry: GradeEntry }> = ({ entry }) => {
   const gradeStatus = getGradeStatus(entry.grades);
 
   return (
-    <Card className="mb-4">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{entry.subjectcode}</CardTitle>
+    <Card className="mb-4 w-full">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-2">
+        <CardTitle className="text-sm sm:text-base font-medium break-words">{entry.subjectcode}</CardTitle>
         <GradeStatusBadge status={gradeStatus.Prelim} />
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           {(['Prelim', 'Midterm', 'Final'] as GradeType[]).map((gradeType) => (
-            <div key={gradeType} className="text-center">
-              <p className="text-xs text-muted-foreground">{gradeType}</p>
-              <p className="font-bold">
+            <div key={gradeType} className="text-center p-2">
+              <p className="text-xs sm:text-sm text-muted-foreground">{gradeType}</p>
+              <p className="text-sm sm:text-base font-bold">
                 {isGradeAvailable(entry.grades[gradeType]) 
                   ? entry.grades[gradeType] 
                   : 'Not Available'}
@@ -110,21 +115,24 @@ export const GradesView: React.FC<GradesViewProps> = ({ semesterName, schoolYear
   if (isLoadingProfile || isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <p>Loading grades...</p>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          <BookOpen className="w-6 sm:w-8 h-6 sm:h-8 text-blue-500" />
+        </motion.div>
       </div>
     );
   }
 
-  // No grades found
   if (grades.length === 0) {
     return (
       <div className="text-center py-8">
-        <p>No grades available at the moment.</p>
+        <p className="text-sm sm:text-base">No grades available at the moment.</p>
       </div>
     );
   }
 
-  // Grades summary
   const totalSubjects = grades.length;
   const gradedSubjects = grades.filter(entry => 
     isGradeAvailable(entry.grades.Prelim) && 
@@ -133,17 +141,17 @@ export const GradesView: React.FC<GradesViewProps> = ({ semesterName, schoolYear
   ).length;
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg p-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Grades Overview</h2>
-          <p className="text-sm text-gray-500">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <div className="bg-white shadow rounded-lg p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
+          <h2 className="text-lg sm:text-xl font-semibold">Grades Overview</h2>
+          <p className="text-xs sm:text-sm text-gray-500">
             {gradedSubjects} of {totalSubjects} subjects fully graded
           </p>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {grades.map((entry) => (
           <SubjectGrade key={entry.studentgradeid} entry={entry} />
         ))}

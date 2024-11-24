@@ -338,7 +338,7 @@ export const DashboardHeader = () => {
                         {getPageTitle()}
                       </h1>
                       <span className="inline-flex items-center bg-white/10 text-white/90 text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded-full border border-white/20 font-medium whitespace-nowrap">
-                        BETA v1.4
+                        BETA v1.5
                       </span>
                     </div>
                   </div>

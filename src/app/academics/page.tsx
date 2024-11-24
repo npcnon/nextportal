@@ -1,5 +1,5 @@
 "use client"
-
+import { HTMLAttributes } from 'react';
 import React, { useState, useEffect } from 'react';
 import {
   Tabs,
@@ -68,26 +68,26 @@ interface ClassSchedule {
 const ClassCard = ({ classItem }) => (
   <div className="bg-white p-3 sm:p-4 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-300 mb-4">
     <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-0">
-      <h3 className="font-semibold text-base sm:text-lg text-[#1A2A5B]">
+      <h3 className="font-semibold text-sm sm:text-lg text-[#1A2A5B] break-words">
         {classItem.subjectCode} - {classItem.subjectDescription}
       </h3>
       <div className="flex flex-wrap gap-2">
-        <Badge variant="outline" className="bg-blue-50">
+        <Badge variant="outline" className="bg-blue-50 text-xs sm:text-sm">
           {classItem.unit} {classItem.unit === 1 ? 'unit' : 'units'}
         </Badge>
-        <Badge variant="secondary">
+        <Badge variant="secondary" className="text-xs sm:text-sm">
           {classItem.semesterName} {classItem.schoolYear}
         </Badge>
       </div>
     </div>
     
-    <div className="mt-3 space-y-2 text-gray-600">
-      <p className="flex items-center gap-2">
-        <User className="h-4 w-4 text-blue-500" />
+    <div className="mt-2 sm:mt-3 space-y-2 text-gray-600">
+      <p className="flex items-center gap-2 text-sm sm:text-base">
+        <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
         <span className="font-medium">Instructor:</span> {classItem.instructorFullName}
       </p>
-      <p className="flex items-center gap-2">
-        <MapPin className="h-4 w-4 text-red-500" />
+      <p className="flex items-center gap-2 text-sm sm:text-base">
+        <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
         <span className="font-medium">Room:</span> {classItem.roomInfo.room_number}
       </p>
     </div>
@@ -102,7 +102,7 @@ const EnrolledClassesDialog = ({
   description 
 }) => (
   <Dialog open={isOpen} onOpenChange={onClose}>
-    <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] sm:max-h-[80vh]">
+    <DialogContent className="max-w-3xl max-h-[80vh]">
       <DialogHeader>
         <DialogTitle className="text-2xl font-bold">{title}</DialogTitle>
         <p className="text-gray-500">{description}</p>
@@ -135,12 +135,13 @@ const AnimatedInfoCard = ({ icon, label, value, subtext, color, onClick }) => (
   </div>
 );
 
-
+// Update the main AcademicsView component
 export default function AcademicsView() {
   const { isLoadingProfile, profileData } = useStudentProfileStore();
   const [currentSemester, setCurrentSemester] = useState<Semester | null>(null);
   const [enrolledClasses, setEnrolledClasses] = useState<EnrolledClass[]>([]);
   const [classSchedules, setClassSchedules] = useState<ClassSchedule[]>([]);
+  const [totalUnits, setTotalUnits] = useState(0);
   const [currentSemesterUnits, setCurrentSemesterUnits] = useState(0);
   const [totalUnitsAllSemesters, setTotalUnitsAllSemesters] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -151,8 +152,16 @@ export default function AcademicsView() {
     description: ''
   });
 
+  const academicRecord = {
+    gpa: '1.50',
+    standing: 'Good Standing',
+    terms: [
+      { term: '1st Semester 2023-2024', gpa: '1.50' },
+      { term: '2nd Semester 2022-2023', gpa: '1.75' },
+      { term: '1st Semester 2022-2023', gpa: '1.25' },
+    ]
+  };
   const handleShowCurrentClasses = () => {
-    // Filter classes for current semester only
     const currentClasses = enrolledClasses.filter(
       classItem => classItem.semester_id === currentSemester?.id
     );
@@ -165,7 +174,6 @@ export default function AcademicsView() {
   };
 
   const handleShowAllClasses = () => {
-    // Show all classes across all semesters
     setDialogContent({
       classes: enrolledClasses,
       title: 'All Enrolled Classes',
@@ -173,8 +181,6 @@ export default function AcademicsView() {
     });
     setDialogOpen(true);
   };
-  
-  
   // Helper function to convert day abbreviation to full day name
   const getDayFullName = (dayAbbr: string) => {
     const days: { [key: string]: string } = {
@@ -207,59 +213,55 @@ export default function AcademicsView() {
           const activeSemester = semesterResponse.data.results.find((sem: Semester) => sem.is_active) || semesterResponse.data.results[0];
           setCurrentSemester(activeSemester);
 
-          // Fetch All Schedules first
-          const schedulesResponse = await apiClient.post(`proxy`, {
-            url: 'https://benedicto-scheduling-backend.onrender.com/teachers/all-subjects'
-          });
-          const allSchedules = schedulesResponse.data;
+
+
           
-          // Fetch enrolled classes
           const enrolledClassesResponse = await axios.get(
             `https://node-mysql-signup-verification-api.onrender.com/enrollment/external/all-enrolled-classes`
           );
+          const currentSemesterId = activeSemester.id;
           
-          // Filter enrolled classes for current student
-          const studentEnrolledClasses = enrolledClassesResponse.data.filter(
+          // Get all classes for this student
+          const allStudentClasses = enrolledClassesResponse.data.filter(
             (classItem: EnrolledClass) => classItem.student_id === profileData.student_id
           );
-
-          // Enrich enrolled classes with scheduling data
-          const enrichedClasses = studentEnrolledClasses.map((classItem: EnrolledClass) => {
-            const scheduleData = allSchedules.find(
-              (schedule: ClassSchedule) => 
-                schedule.id === classItem.class_id &&
-                schedule.subject_code === classItem.subjectCode
-            );
-            
-            return {
-              ...classItem,
-              unit: scheduleData ? scheduleData.units : classItem.unit,
-              schedulingData: scheduleData
-            };
-          });
-
-          setEnrolledClasses(enrichedClasses);
-
-          // Calculate current semester units
-          const currentSemesterClasses = enrichedClasses.filter(
-            (classItem: EnrolledClass) => classItem.semester_id === activeSemester.id
+          const studentEnrolledClasses = allStudentClasses.filter(
+            (classItem: EnrolledClass) => classItem.semester_id === currentSemesterId
           );
-          
-          const currentUnits = currentSemesterClasses.reduce(
-            (total: number, classItem: EnrolledClass) => total + (classItem.unit || 0),
-            0
+          console.log('Raw Enrolled Classes:', enrolledClassesResponse.data);
+          console.log('Filtered Enrolled Classes:', studentEnrolledClasses);
+
+          // Set filtered enrolled classes
+          setEnrolledClasses(studentEnrolledClasses);
+
+        // Calculate current semester units
+        const currentSemUnits = studentEnrolledClasses.reduce(
+          (total: number, classItem: EnrolledClass) => total + classItem.unit,
+          0
+        );
+        setCurrentSemesterUnits(currentSemUnits);
+
+        // Calculate total units across all semesters
+        const allSemestersUnits = allStudentClasses.reduce(
+          (total: number, classItem: EnrolledClass) => total + classItem.unit,
+          0
+        );
+        setTotalUnitsAllSemesters(allSemestersUnits);
+
+          // Fetch All Schedules
+          const schedulesResponse = await apiClient.post(`proxy`,
+            {
+              url : 'https://benedicto-scheduling-backend.onrender.com/teachers/all-subjects'
+            }
+          )
+
+          // Filter schedules based on enrolled class IDs
+          const enrolledClassIds = studentEnrolledClasses.map((ec: EnrolledClass) => ec.class_id);
+          const filteredSchedules = schedulesResponse.data.filter((schedule: ClassSchedule) => 
+            enrolledClassIds.includes(schedule.id)
           );
-          setCurrentSemesterUnits(currentUnits);
-
-          // Calculate total units for ALL semesters
-          const allUnits = enrichedClasses.reduce(
-            (total: number, classItem: EnrolledClass) => total + (classItem.unit || 0),
-            0
-          );
-          setTotalUnitsAllSemesters(allUnits);
-
-          setClassSchedules(allSchedules);
-
+          setClassSchedules(filteredSchedules);
+          console.log('filtered schedules: ', filteredSchedules)
         } catch (error) {
           console.error('Error fetching data:', error);
         } finally {
@@ -270,8 +272,7 @@ export default function AcademicsView() {
 
     fetchData();
   }, [isLoadingProfile, profileData]);
-  
-  
+
  if (isLoading) {
     return <AcademicsViewSkeleton />;
   }
@@ -280,138 +281,134 @@ export default function AcademicsView() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white py-4 sm:py-8 px-2 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg border border-[#1A2A5B]/10 overflow-hidden mb-8">
-        <div className="bg-gradient-to-r from-[#1A2A5B] to-[#142247] px-4 sm:px-8 py-6 sm:py-12">
-            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-4 border-white/30">
-                <GraduationCap className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
+        <div className="bg-white rounded-xl shadow-lg border border-[#1A2A5B]/10 overflow-hidden mb-4 sm:mb-8">
+          <div className="bg-gradient-to-r from-[#1A2A5B] to-[#142247] px-4 sm:px-8 py-6 sm:py-12">
+            <div className="flex items-center gap-3 sm:gap-6">
+              <div className="h-16 w-16 sm:h-24 sm:w-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-4 border-white/30">
+                <GraduationCap className="h-8 w-8 sm:h-12 sm:w-12 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight text-center sm:text-left">Academic Journey</h1>
-                  <p className="text-blue-100 mt-1 flex items-center gap-2 justify-center sm:justify-start">
-                    <Calendar className="h-4 w-4" />
-                    {currentSemester 
-                      ? `${currentSemester.semester_name} ${currentSemester.school_year}` 
-                      : 'Current Term: Not Available'}
-                  </p>
+                <h1 className="text-xl sm:text-3xl font-bold text-white tracking-tight">Academic Journey</h1>
+                <p className="text-blue-100 mt-1 flex items-center gap-2 text-sm sm:text-base">
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                  {currentSemester 
+                    ? `${currentSemester.semester_name} ${currentSemester.school_year}` 
+                    : 'Current Term: Not Available'}
+                </p>
               </div>
             </div>
           </div>
-          
+
           {/* Academic Summary */}
           <div className="px-4 sm:px-8 py-4 sm:py-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              <AnimatedInfoCard 
-                icon={<BookOpen className="text-green-500" />} 
-                label="Current Units" 
-                value={`${currentSemesterUnits}`}
-                subtext={`${currentSemester?.semester_name} ${currentSemester?.school_year}`} 
-                color="text-green-600"
-                onClick={handleShowCurrentClasses}
-              />
-              <AnimatedInfoCard 
-                icon={<BarChart2 className="text-blue-500" />} 
-                label="Total Units" 
-                value={`${totalUnitsAllSemesters}`}
-                subtext="All Semesters Combined" 
-                color="text-blue-600"
-                onClick={handleShowAllClasses}
-              />
-              <EnrolledClassesDialog
-                isOpen={dialogOpen}
-                onClose={() => setDialogOpen(false)}
-                classes={dialogContent.classes}
-                title={dialogContent.title}
-                description={dialogContent.description}
-              />
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+          <AnimatedInfoCard 
+            icon={<BookOpen className="text-green-500" />} 
+            label="Current Units" 
+            value={`${currentSemesterUnits}`}
+            subtext={`This Semester`} 
+            color="text-green-600"
+            onClick={handleShowCurrentClasses}
+          />
+          <AnimatedInfoCard 
+            icon={<BarChart2 className="text-blue-500" />} 
+            label="Total Units" 
+            value={`${totalUnitsAllSemesters}`}
+            subtext="All Semesters" 
+            color="text-blue-600"
+            onClick={handleShowAllClasses}
+          />
+
+      <EnrolledClassesDialog
+        isOpen={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        classes={dialogContent.classes}
+        title={dialogContent.title}
+        description={dialogContent.description}
+      />
+    </div>
           </div>
         </div>
 
         {/* Tabs Section */}
         <Tabs defaultValue="dynamicGrades" className="bg-white rounded-xl shadow-lg border border-[#1A2A5B]/10 p-3 sm:p-6">
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-0 mb-4 sm:mb-6 bg-gray-100">
+          <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-6 bg-gray-100">
             <TabsTrigger 
               value="dynamicGrades" 
-              className="data-[state=active]:bg-[#1A2A5B] data-[state=active]:text-white"
+              className="text-xs sm:text-sm data-[state=active]:bg-[#1A2A5B] data-[state=active]:text-white px-2 py-1 sm:px-4 sm:py-2"
             >
               Current Grades
             </TabsTrigger>
             <TabsTrigger 
               value="schedule"
-              className="data-[state=active]:bg-[#1A2A5B] data-[state=active]:text-white"
+              className="text-xs sm:text-sm data-[state=active]:bg-[#1A2A5B] data-[state=active]:text-white px-2 py-1 sm:px-4 sm:py-2"
             >
               Class Schedule
             </TabsTrigger>
             <TabsTrigger 
               value="history"
-              className="data-[state=active]:bg-[#1A2A5B] data-[state=active]:text-white"
+              className="text-xs sm:text-sm data-[state=active]:bg-[#1A2A5B] data-[state=active]:text-white px-2 py-1 sm:px-4 sm:py-2"
             >
               Grade History
             </TabsTrigger>
           </TabsList>
-
           {/* Content for each tab */}
-          <TabsContent value="dynamicGrades">
-            {currentSemester && (
-              <GradesView 
-                semesterName={currentSemester.semester_name}
-                schoolYear={currentSemester.school_year}
-              />
-            )}
-          </TabsContent>
-
+            <TabsContent value="dynamicGrades">
+                {currentSemester && (
+                  <GradesView 
+                    semesterName={currentSemester.semester_name}
+                    schoolYear={currentSemester.school_year}
+                  />
+                )}
+            </TabsContent>
+          {/* Schedule Tab Content */}
           <TabsContent value="schedule">
-            <div className="space-y-4">
-              {enrolledClasses
-                // Filter to show only current semester classes
-                .filter((classItem) => classItem.semester_id === currentSemester?.id)
-                .map((classItem) => {
-                  // Find matching schedule for this class
-                  const schedule = classSchedules.find(
-                    (sch) => sch.subject_code === classItem.subjectCode
-                  );
+            <div className="space-y-3 sm:space-y-4">
+              {enrolledClasses.map((classItem) => {
+                const schedule = classSchedules.find(
+                  (sch) => sch.subject_code === classItem.subjectCode
+                );
 
-                  return (
-                    <div key={classItem.student_class_id} className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-all duration-300">
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-semibold text-lg text-[#1A2A5B]">
-                          {classItem.subjectCode} - {classItem.subjectDescription}
-                        </h3>
-                        <Badge variant="outline" className="bg-blue-50">
-                          {classItem.unit} {classItem.unit === 1 ? 'unit' : 'units'}
-                        </Badge>
+                return (
+                  <div key={classItem.student_class_id} className="bg-white p-3 sm:p-4 rounded-lg shadow hover:shadow-md transition-all duration-300">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-0">
+                      <h3 className="font-semibold text-sm sm:text-lg text-[#1A2A5B] break-words">
+                        {classItem.subjectCode} - {classItem.subjectDescription}
+                      </h3>
+                      <Badge variant="outline" className="bg-blue-50 text-xs sm:text-sm">
+                        {classItem.unit} {classItem.unit === 1 ? 'unit' : 'units'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div className="space-y-2 text-gray-600">
+                        <p className="flex items-center gap-2 text-sm sm:text-base">
+                          <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+                          <span className="font-medium">Instructor:</span> {classItem.instructorFullName}
+                        </p>
+                        <p className="flex items-center gap-2 text-sm sm:text-base">
+                          <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                          <span className="font-medium">Room:</span> {classItem.roomInfo.room_number}
+                        </p>
                       </div>
-                      
-                      <div className="mt-3 grid grid-cols-1 gap-3 sm:gap-4">
+
+                      {schedule && (
                         <div className="space-y-2 text-gray-600">
-                          <p className="flex flex-wrap items-center gap-2">
-                            <User className="h-4 w-4 text-blue-500" />
-                            <span className="font-medium">Instructor:</span> {classItem.instructorFullName}
+                          <p className="flex items-center gap-2 text-sm sm:text-base">
+                            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
+                            <span className="font-medium">Day:</span> {getDayFullName(schedule.day)}
                           </p>
-                          <p className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-red-500" />
-                            <span className="font-medium">Room:</span> {classItem.roomInfo.room_number}
+                          <p className="flex items-center gap-2 text-sm sm:text-base">
+                            <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500" />
+                            <span className="font-medium">Time:</span> 
+                            {formatTime(schedule.start)} - {formatTime(schedule.end)}
                           </p>
                         </div>
-
-                        {schedule && (
-                          <div className="space-y-2 text-gray-600">
-                            <p className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-green-500" />
-                              <span className="font-medium">Day:</span> {getDayFullName(schedule.day)}
-                            </p>
-                            <p className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-purple-500" />
-                              <span className="font-medium">Time:</span> 
-                              {formatTime(schedule.start)} - {formatTime(schedule.end)}
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
             </div>
           </TabsContent>
 
@@ -428,7 +425,7 @@ export default function AcademicsView() {
 
 // Skeleton Loading Component
 const AcademicsViewSkeleton = () => (
-  <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white py-4 sm:py-8 px-2 sm:px-6 lg:px-8">
+  <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white py-8 px-4 sm:px-6 lg:px-8">
     <div className="max-w-7xl mx-auto">
       {/* Header Skeleton */}
       <div className="bg-white rounded-xl shadow-lg mb-8">
