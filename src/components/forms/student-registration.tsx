@@ -1188,7 +1188,7 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
           <RequiredFormField
             type="select"
             name="academic_background.application_type"
-            label="Application Type"
+            label="Student Type"
             control={control}
             options={applicationTypeOptions}
             defaultValue={formData.academic_background.application_type}
@@ -1198,7 +1198,7 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
           <RequiredFormField
             type="select"
             name="academic_background.student_type"
-            label="Student Type"
+            label="Application Type"
             control={control}
             options={studentTypeOptions}
             defaultValue={formData.academic_background.student_type}

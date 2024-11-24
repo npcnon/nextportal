@@ -33,6 +33,7 @@ import { useStudentProfileStore } from '@/lib/profile-store';
 import apiClient, { AuthenticationError, clearAuthTokens } from '@/lib/clients/authenticated-api-client';
 import { useToast } from '@/hooks/use-toast';
 import { useHeader } from '../providers/header-provider';
+import { useFullDataStore } from '@/lib/fulldata-store';
 
 interface ProfilePicture {
   id: number;
@@ -60,6 +61,7 @@ export const DashboardHeader = () => {
     isLoadingPicture, 
     setIsLoadingPicture 
   } = useHeader();
+  const { isLoading, isInitialized, personal_data = []} = useFullDataStore();
   const profileData = useStudentProfileStore((state) => state.profileData);
   const clearProfile = useStudentProfileStore((state) => state.clearProfile);
   const fullName = profileData.name || 'Loading...';
@@ -281,17 +283,24 @@ export const DashboardHeader = () => {
                 </SheetContent>
               </Sheet>
   
-             {/* Logo and Title - Adjusted logo size for mobile */}
-            <div className="flex items-center">
-              <img 
-                src="/img/square_logo.png" 
-                alt="Logo" 
-                className="h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 lg:h-40 lg:w-40 object-contain -ml-2 sm:-ml-4 lg:-ml-6"
-              />
-              <h1 className="text-lg sm:text-xl font-bold text-white ml-3 sm:ml-6 lg:ml-10 hidden sm:block">
-                {getPageTitle()}
-              </h1>
-            </div>
+              {/* Logo and Title - With Beta badge next to title */}
+              <div className="flex items-center">
+                <img 
+                  src="/img/square_logo.png" 
+                  alt="Logo" 
+                  className="h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 lg:h-40 lg:w-40 object-contain -ml-2 sm:-ml-4 lg:-ml-6"
+                />
+                <div className="flex items-center gap-2 ml-3 sm:ml-6 lg:ml-10">
+                  <h1 className="text-lg sm:text-xl font-bold text-white hidden sm:block">
+                    {getPageTitle()}
+                  </h1>
+                  <div className="hidden sm:flex items-center">
+                    <span className="bg-white/10 text-white text-xs px-2 py-0.5 rounded-full border border-white/20 font-medium animate-pulse">
+                      BETA v1.3
+                    </span>
+                  </div>
+                </div>
+              </div>
 
               {/* Desktop Navigation */}
               <div className="hidden lg:flex items-center space-x-1 ml-4">

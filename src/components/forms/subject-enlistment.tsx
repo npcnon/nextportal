@@ -105,7 +105,8 @@ export const SubjectEnlistment = () => {
   const [fetchingSchedules, setFetchingSchedules] = useState<boolean>(true);
   const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
   const [available_semester, setSemester] = useState<Semester[]>([]);
-
+// Add this state at the beginning of your component
+const [isEnrolling, setIsEnrolling] = useState(false);
   const [showEnlistment, setShowEnlistment] = useState<boolean>(false);
   const formatTime = (time: string) => {
     return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
@@ -274,42 +275,37 @@ export const SubjectEnlistment = () => {
     return <SubjectTableSkeleton />;
   }
 
+// Modify the handleNewSemesterClick function
 const handleNewSemesterClick = async () => {
-    try {
-      const semesterResponse = await apiClient.get(`semester/`, {
-        params: { campus_id: profileData.profile.student_info.campus }
-      });
-      const activeSemester = semesterResponse.data.results.find((sem: Semester) => sem.is_active) || semesterResponse.data.results[0];
+  setIsEnrolling(true); // Set loading state to true when clicked
+  try {
+    const semesterResponse = await apiClient.get(`semester/`, {
+      params: { campus_id: profileData.profile.student_info.campus }
+    });
+    const activeSemester = semesterResponse.data.results.find((sem: Semester) => sem.is_active) || semesterResponse.data.results[0];
 
-
-      console.log(`fulldata applicant id: ${personal_data[0]?.fulldata_applicant_id}`)
-      console.log(`academic background ${academic_background[0].semester_entry} compared to current semester: ${currentSemester} is equal to: ${academic_background[0].semester_entry < activeSemester.id}`)
-
-      // This is just a placeholder POST request - replace with your actual endpoint
-      await axios.post('https://node-mysql-signup-verification-api.onrender.com/students/external/add-enrollment', {
-        "fulldata_applicant_id": personal_data[0]?.fulldata_applicant_id,
-        "semester_id": activeSemester.id,
-      });
-      
-      setShowEnlistment(true);
-      toast({
-        title: "Success",
-        description: "You can now proceed with subject enlistment.",
-      });
-      setTimeout(() => {
-        window.location.href = window.location.href;
-        // OR
-        // window.location.replace(window.location.href);
-      }, 1500);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to process semester enrollment. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
+    await axios.post('https://node-mysql-signup-verification-api.onrender.com/students/external/add-enrollment', {
+      "fulldata_applicant_id": personal_data[0]?.fulldata_applicant_id,
+      "semester_id": activeSemester.id,
+    });
+    
+    setShowEnlistment(true);
+    toast({
+      title: "Success",
+      description: "You can now proceed with subject enlistment.",
+    });
+    setTimeout(() => {
+      window.location.href = window.location.href;
+    }, 1500);
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to process semester enrollment. Please try again.",
+      variant: "destructive",
+    });
+    setIsEnrolling(false); // Reset loading state on error
+  }
+};
   // If student is not initially enrolled
   if (!(personal_data && personal_data.length > 0) || (personal_data[0].status !== 'initially enrolled' && personal_data[0].status !== 'officially enrolled')) {
     return <RegistrationRequiredNotice />;
@@ -330,9 +326,17 @@ const handleNewSemesterClick = async () => {
           </p>
           <Button
             onClick={handleNewSemesterClick}
+            disabled={isEnrolling}
             className="bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700 shadow-lg transition-all duration-300 font-semibold"
           >
-            Start Subject Enlistment
+            {isEnrolling ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              "Start Subject Enlistment"
+            )}
           </Button>
         </CardHeader>
       </Card>

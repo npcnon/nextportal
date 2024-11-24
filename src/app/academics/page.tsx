@@ -146,7 +146,6 @@ export default function AcademicsView() {
   const [currentSemester, setCurrentSemester] = useState<Semester | null>(null);
   const [enrolledClasses, setEnrolledClasses] = useState<EnrolledClass[]>([]);
   const [classSchedules, setClassSchedules] = useState<ClassSchedule[]>([]);
-  const [totalUnits, setTotalUnits] = useState(0);
   const [currentSemesterUnits, setCurrentSemesterUnits] = useState(0);
   const [totalUnitsAllSemesters, setTotalUnitsAllSemesters] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -157,16 +156,8 @@ export default function AcademicsView() {
     description: ''
   });
 
-  const academicRecord = {
-    gpa: '1.50',
-    standing: 'Good Standing',
-    terms: [
-      { term: '1st Semester 2023-2024', gpa: '1.50' },
-      { term: '2nd Semester 2022-2023', gpa: '1.75' },
-      { term: '1st Semester 2022-2023', gpa: '1.25' },
-    ]
-  };
   const handleShowCurrentClasses = () => {
+    // Filter classes for current semester only
     const currentClasses = enrolledClasses.filter(
       classItem => classItem.semester_id === currentSemester?.id
     );
@@ -179,6 +170,7 @@ export default function AcademicsView() {
   };
 
   const handleShowAllClasses = () => {
+    // Show all classes across all semesters
     setDialogContent({
       classes: enrolledClasses,
       title: 'All Enrolled Classes',
@@ -186,6 +178,8 @@ export default function AcademicsView() {
     });
     setDialogOpen(true);
   };
+  
+  
   // Helper function to convert day abbreviation to full day name
   const getDayFullName = (dayAbbr: string) => {
     const days: { [key: string]: string } = {
@@ -218,55 +212,59 @@ export default function AcademicsView() {
           const activeSemester = semesterResponse.data.results.find((sem: Semester) => sem.is_active) || semesterResponse.data.results[0];
           setCurrentSemester(activeSemester);
 
-
-
+          // Fetch All Schedules first
+          const schedulesResponse = await apiClient.post(`proxy`, {
+            url: 'https://benedicto-scheduling-backend.onrender.com/teachers/all-subjects'
+          });
+          const allSchedules = schedulesResponse.data;
           
+          // Fetch enrolled classes
           const enrolledClassesResponse = await axios.get(
             `https://node-mysql-signup-verification-api.onrender.com/enrollment/external/all-enrolled-classes`
           );
-          const currentSemesterId = activeSemester.id;
           
-          // Get all classes for this student
-          const allStudentClasses = enrolledClassesResponse.data.filter(
+          // Filter enrolled classes for current student
+          const studentEnrolledClasses = enrolledClassesResponse.data.filter(
             (classItem: EnrolledClass) => classItem.student_id === profileData.student_id
           );
-          const studentEnrolledClasses = allStudentClasses.filter(
-            (classItem: EnrolledClass) => classItem.semester_id === currentSemesterId
+
+          // Enrich enrolled classes with scheduling data
+          const enrichedClasses = studentEnrolledClasses.map((classItem: EnrolledClass) => {
+            const scheduleData = allSchedules.find(
+              (schedule: ClassSchedule) => 
+                schedule.id === classItem.class_id &&
+                schedule.subject_code === classItem.subjectCode
+            );
+            
+            return {
+              ...classItem,
+              unit: scheduleData ? scheduleData.units : classItem.unit,
+              schedulingData: scheduleData
+            };
+          });
+
+          setEnrolledClasses(enrichedClasses);
+
+          // Calculate current semester units
+          const currentSemesterClasses = enrichedClasses.filter(
+            (classItem: EnrolledClass) => classItem.semester_id === activeSemester.id
           );
-          console.log('Raw Enrolled Classes:', enrolledClassesResponse.data);
-          console.log('Filtered Enrolled Classes:', studentEnrolledClasses);
-
-          // Set filtered enrolled classes
-          setEnrolledClasses(studentEnrolledClasses);
-
-        // Calculate current semester units
-        const currentSemUnits = studentEnrolledClasses.reduce(
-          (total: number, classItem: EnrolledClass) => total + classItem.unit,
-          0
-        );
-        setCurrentSemesterUnits(currentSemUnits);
-
-        // Calculate total units across all semesters
-        const allSemestersUnits = allStudentClasses.reduce(
-          (total: number, classItem: EnrolledClass) => total + classItem.unit,
-          0
-        );
-        setTotalUnitsAllSemesters(allSemestersUnits);
-
-          // Fetch All Schedules
-          const schedulesResponse = await apiClient.post(`proxy`,
-            {
-              url : 'https://benedicto-scheduling-backend.onrender.com/teachers/all-subjects'
-            }
-          )
-
-          // Filter schedules based on enrolled class IDs
-          const enrolledClassIds = studentEnrolledClasses.map((ec: EnrolledClass) => ec.class_id);
-          const filteredSchedules = schedulesResponse.data.filter((schedule: ClassSchedule) => 
-            enrolledClassIds.includes(schedule.id)
+          
+          const currentUnits = currentSemesterClasses.reduce(
+            (total: number, classItem: EnrolledClass) => total + (classItem.unit || 0),
+            0
           );
-          setClassSchedules(filteredSchedules);
-          console.log('filtered schedules: ', filteredSchedules)
+          setCurrentSemesterUnits(currentUnits);
+
+          // Calculate total units for ALL semesters
+          const allUnits = enrichedClasses.reduce(
+            (total: number, classItem: EnrolledClass) => total + (classItem.unit || 0),
+            0
+          );
+          setTotalUnitsAllSemesters(allUnits);
+
+          setClassSchedules(allSchedules);
+
         } catch (error) {
           console.error('Error fetching data:', error);
         } finally {
@@ -277,7 +275,8 @@ export default function AcademicsView() {
 
     fetchData();
   }, [isLoadingProfile, profileData]);
-
+  
+  
  if (isLoading) {
     return <AcademicsViewSkeleton />;
   }
@@ -306,33 +305,32 @@ export default function AcademicsView() {
           
           {/* Academic Summary */}
           <div className="px-8 py-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <AnimatedInfoCard 
-            icon={<BookOpen className="text-green-500" />} 
-            label="Current Units" 
-            value={`${currentSemesterUnits}`}
-            subtext={`This Semester`} 
-            color="text-green-600"
-            onClick={handleShowCurrentClasses}
-          />
-          <AnimatedInfoCard 
-            icon={<BarChart2 className="text-blue-500" />} 
-            label="Total Units" 
-            value={`${totalUnitsAllSemesters}`}
-            subtext="All Semesters" 
-            color="text-blue-600"
-            onClick={handleShowAllClasses}
-          />
-
-      <EnrolledClassesDialog
-        isOpen={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        classes={dialogContent.classes}
-        title={dialogContent.title}
-        description={dialogContent.description}
-      />
-    </div>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <AnimatedInfoCard 
+                icon={<BookOpen className="text-green-500" />} 
+                label="Current Units" 
+                value={`${currentSemesterUnits}`}
+                subtext={`${currentSemester?.semester_name} ${currentSemester?.school_year}`} 
+                color="text-green-600"
+                onClick={handleShowCurrentClasses}
+              />
+              <AnimatedInfoCard 
+                icon={<BarChart2 className="text-blue-500" />} 
+                label="Total Units" 
+                value={`${totalUnitsAllSemesters}`}
+                subtext="All Semesters Combined" 
+                color="text-blue-600"
+                onClick={handleShowAllClasses}
+              />
+              <EnrolledClassesDialog
+                isOpen={dialogOpen}
+                onClose={() => setDialogOpen(false)}
+                classes={dialogContent.classes}
+                title={dialogContent.title}
+                description={dialogContent.description}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Tabs Section */}
@@ -369,67 +367,58 @@ export default function AcademicsView() {
           </TabsContent>
 
           <TabsContent value="schedule">
-  <div className="space-y-4">
-    {enrolledClasses.map((classItem) => {
-      // Find matching schedule for this class
-      const schedule = classSchedules.find(
-        (sch) => sch.subject_code === classItem.subjectCode
-      );
+            <div className="space-y-4">
+              {enrolledClasses
+                // Filter to show only current semester classes
+                .filter((classItem) => classItem.semester_id === currentSemester?.id)
+                .map((classItem) => {
+                  // Find matching schedule for this class
+                  const schedule = classSchedules.find(
+                    (sch) => sch.subject_code === classItem.subjectCode
+                  );
 
-      return (
-        <div key={classItem.student_class_id} className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-all duration-300">
-          <div className="flex justify-between items-start">
-            <h3 className="font-semibold text-lg text-[#1A2A5B]">
-              {classItem.subjectCode} - {classItem.subjectDescription}
-            </h3>
-            <Badge variant="outline" className="bg-blue-50">
-              {classItem.unit} {classItem.unit === 1 ? 'unit' : 'units'}
-            </Badge>
-          </div>
-          
-          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2 text-gray-600">
-              <p className="flex items-center gap-2">
-                <User className="h-4 w-4 text-blue-500" />
-                <span className="font-medium">Instructor:</span> {classItem.instructorFullName}
-              </p>
-              <p className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-red-500" />
-                <span className="font-medium">Room:</span> {classItem.roomInfo.room_number}
-              </p>
+                  return (
+                    <div key={classItem.student_class_id} className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-all duration-300">
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-semibold text-lg text-[#1A2A5B]">
+                          {classItem.subjectCode} - {classItem.subjectDescription}
+                        </h3>
+                        <Badge variant="outline" className="bg-blue-50">
+                          {classItem.unit} {classItem.unit === 1 ? 'unit' : 'units'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2 text-gray-600">
+                          <p className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-blue-500" />
+                            <span className="font-medium">Instructor:</span> {classItem.instructorFullName}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-red-500" />
+                            <span className="font-medium">Room:</span> {classItem.roomInfo.room_number}
+                          </p>
+                        </div>
+
+                        {schedule && (
+                          <div className="space-y-2 text-gray-600">
+                            <p className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-green-500" />
+                              <span className="font-medium">Day:</span> {getDayFullName(schedule.day)}
+                            </p>
+                            <p className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-purple-500" />
+                              <span className="font-medium">Time:</span> 
+                              {formatTime(schedule.start)} - {formatTime(schedule.end)}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
-
-            {schedule && (
-              <div className="space-y-2 text-gray-600">
-                <p className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-green-500" />
-                  <span className="font-medium">Day:</span> {getDayFullName(schedule.day)}
-                </p>
-                <p className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-purple-500" />
-                  <span className="font-medium">Time:</span> 
-                  {formatTime(schedule.start)} - {formatTime(schedule.end)}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Additional class info badge */}
-          {/* <div className="mt-3 flex gap-2">
-            {schedule?.background && (
-              <div 
-                className="text-xs px-2 py-1 rounded-full text-white"
-                style={{ backgroundColor: schedule.background }}
-              >
-                {schedule.semester} {schedule.school_year}
-              </div>
-            )}
-          </div> */}
-        </div>
-      );
-    })}
-  </div>
-</TabsContent>
+          </TabsContent>
 
           <TabsContent value="history">
             <GradeHistory />

@@ -186,11 +186,11 @@ useEffect(() => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           <Section title="Current Academic Status">
             <div className="space-y-4">
-              <InfoRow label="Student Type" value={academics?.student_type} />
+              <InfoRow label="Application Type" value={academics?.student_type} />
               <InfoRow label="Year Level" value={academics?.year_level} />
               <InfoRow label="Entry Year" value={academics?.year_entry.toString()} />
               <InfoRow label="Expected Graduation" value={academics?.year_graduate.toString()} />
-              <InfoRow label="Application Type" value={academics?.application_type} />
+              <InfoRow label="Student Type" value={academics?.application_type} />
             </div>
           </Section>
 
