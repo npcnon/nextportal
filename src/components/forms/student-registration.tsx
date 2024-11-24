@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { UserCircle, Home, Users, GraduationCap, School, AlertCircle, Check, Loader } from "lucide-react";
+import { UserCircle, Home, Users, GraduationCap, School, AlertCircle, Check, Loader, ArrowRight } from "lucide-react";
 import { useStudentProfileStore } from '@/lib/profile-store';
 import { useToast } from '@/hooks/use-toast'
 import { debounce } from 'lodash';
@@ -1607,8 +1607,6 @@ const StudentRegistrationForm: React.FC = () => {
   //TODO: add subject enlistment prerequisite filter
   //TODO: show grades
 
-
-
   const onSubmit = async (data: StudentFormData) => {
     setIsSubmitting(true);
     try {
@@ -1719,10 +1717,42 @@ const StudentRegistrationForm: React.FC = () => {
     }
   };
 
+  const formRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTop = () => {
+    // Try multiple scroll methods to ensure it works
+    if (formRef.current) {
+      formRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+    
+    // Fallback methods
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.body.scrollTop = 0; // For Safari
+    document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+  };
+
+  const handleNextTab = () => {
+    const tabOrder = ["personal", "contact", "family", "academic"];
+    const currentIndex = tabOrder.indexOf(activeTab);
+    if (currentIndex < tabOrder.length - 1) {
+      setActiveTab(tabOrder[currentIndex + 1]);
+      
+      // Use setTimeout to ensure the new tab content is rendered
+      setTimeout(() => {
+        scrollToTop();
+      }, 100);
+    }
+  };
+
+
+
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-2 sm:px-4">
         <Card className="max-w-5xl mx-auto">
           <CardHeader>
             <CardTitle>
@@ -1730,18 +1760,17 @@ const StudentRegistrationForm: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Skeleton loading state */}
-            <div className="space-y-6">
-              <div className="flex gap-4">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex flex-wrap gap-2 sm:gap-4">
                 {[...Array(4)].map((_, i) => (
-                  <Skeleton key={i} className="h-10 w-24" />
+                  <Skeleton key={i} className="h-10 w-20 sm:w-24" />
                 ))}
               </div>
-              <div className="grid gap-6">
+              <div className="grid gap-4 sm:gap-6">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="space-y-4">
-                    <Skeleton className="h-4 w-32" />
-                    <div className="grid grid-cols-2 gap-4">
+                  <div key={i} className="space-y-3 sm:space-y-4">
+                    <Skeleton className="h-4 w-24 sm:w-32" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <Skeleton className="h-10 w-full" />
                       <Skeleton className="h-10 w-full" />
                     </div>
@@ -1754,35 +1783,72 @@ const StudentRegistrationForm: React.FC = () => {
       </div>
     );
   }
-
+  const tabData = [
+    { id: "personal", label: "Personal Info", shortLabel: "Personal" },
+    { id: "contact", label: "Contact Info", shortLabel: "Contact" },
+    { id: "family", label: "Family Background", shortLabel: "Family" },
+    { id: "academic", label: "Academic Info", shortLabel: "Academic" },
+  ];
   return (
     <FormProvider {...methods}>
-      <div className="container mx-auto px-4">
+      <div ref={formRef} className="container mx-auto px-2 sm:px-4" id="form-top">
         <Card className="max-w-5xl mx-auto">
-          <CardContent>
-            <form onSubmit={methods.handleSubmit(onSubmit, onError)} noValidate>              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <ScrollArea className="w-full">
-                  <TabsList className="w-full justify-start">
-                    <TabsTrigger value="personal">Personal Info</TabsTrigger>
-                    <TabsTrigger value="contact">Contact Info</TabsTrigger>
-                    <TabsTrigger value="family">Family Background</TabsTrigger>
-                    <TabsTrigger value="academic">Academic Info</TabsTrigger>
-                  </TabsList>
-                </ScrollArea>
+          <CardContent className="p-2 sm:p-6">
+            <form onSubmit={methods.handleSubmit(onSubmit, onError)} noValidate>
+              <Tabs 
+                value={activeTab} 
+                onValueChange={(value) => {
+                  setActiveTab(value);
+                  scrollToTop();
+                }} 
+                className="space-y-4"
+              >
+                <div className="relative w-full">
+                  <ScrollArea className="w-full">
+                    <TabsList className="w-full h-auto flex-wrap sm:flex-nowrap">
+                      {tabData.map((tab) => (
+                        <TabsTrigger
+                          key={tab.id}
+                          value={tab.id}
+                          className="flex-1 min-w-[80px] px-2 py-2 text-xs sm:text-sm md:text-base whitespace-nowrap"
+                        >
+                          <span className="hidden sm:inline">{tab.label}</span>
+                          <span className="sm:hidden">{tab.shortLabel}</span>
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </ScrollArea>
+                  <div className="absolute left-0 right-0 h-[2px] bottom-0 bg-border" />
+                </div>
 
                 <TabsContent value="personal">
                   <PersonalInfoForm formData={formData} setFormData={setFormData} />
+                  <div className="flex justify-end mt-6">
+                    <Button type="button" onClick={handleNextTab} className="w-full sm:w-auto">
+                      Next <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="contact">
                   <ContactInfoForm formData={formData} setFormData={setFormData} />
+                  <div className="flex justify-end mt-6">
+                    <Button type="button" onClick={handleNextTab} className="w-full sm:w-auto">
+                      Next <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="family">
                   <FamilyBackgroundForm formData={formData} setFormData={setFormData} />
+                  <div className="flex justify-end mt-6">
+                    <Button type="button" onClick={handleNextTab} className="w-full sm:w-auto">
+                      Next <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
                 </TabsContent>
 
-              <TabsContent value="academic">
+                <TabsContent value="academic">
                   <AcademicBackgroundForm 
                     formData={formData} 
                     setFormData={setFormData}
@@ -1794,29 +1860,25 @@ const StudentRegistrationForm: React.FC = () => {
                     formData={formData} 
                     setFormData={setFormData} 
                   />
+                  <div className="flex justify-end mt-6">
+                    <Button 
+                      type="submit"
+                      className="w-full sm:w-auto min-w-[120px]" 
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <div className="flex items-center justify-center">
+                          <Loader size={20} className="mr-2" />
+                          Submitting...
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center">
+                          <Check className="mr-2" /> Submit
+                        </div>
+                      )}
+                    </Button>
+                  </div>
                 </TabsContent>
-                
-                <div className="flex justify-end gap-4 pt-6">
-                  <Button type="button" variant="outline">
-                    Save as Draft
-                  </Button>
-                  <Button 
-                    type="submit"
-                    className="min-w-[100px]" 
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <div className="flex items-center justify-center">
-                        <Loader size={20} className="mr-2" />
-                        Submitting...
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center">
-                        <Check className="mr-2" /> Submit Application
-                      </div>
-                    )}
-                  </Button>
-                </div>
               </Tabs>
             </form>
           </CardContent>

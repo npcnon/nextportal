@@ -10,11 +10,14 @@ import {
   GraduationCap,
   Users,
   LayoutDashboard,
-  LogOut 
+  LogOut, 
+  X,
+  Settings
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -46,6 +49,7 @@ interface NavigationItem {
   path: string;
   icon: React.ReactElement;
   description: string;
+  requiresPersonalData?: boolean;
 }
 
 export const DashboardHeader = () => {
@@ -66,6 +70,7 @@ export const DashboardHeader = () => {
   const clearProfile = useStudentProfileStore((state) => state.clearProfile);
   const fullName = profileData.name || 'Loading...';
 
+  const hasPersonalData = personal_data.length > 0;
 
   const navigationItems: NavigationItem[] = [
     {
@@ -73,26 +78,34 @@ export const DashboardHeader = () => {
       path: '/dashboard',
       icon: <LayoutDashboard className="w-5 h-5 text-[#ff8a47]" />, 
       description: 'View your student dashboard',
+      requiresPersonalData: false
     },
     {
       name: 'Academics',
       path: '/academics',
       icon: <BookOpen className="w-5 h-5 text-[#ff8a47]" />, 
       description: 'Access your academic information',
+      requiresPersonalData: true
     },
     {
       name: 'Campus Life',
       path: '/campus-life',
       icon: <GraduationCap className="w-5 h-5 text-[#ff8a47]" />, 
       description: 'Explore campus activities',
+      requiresPersonalData: true
     },
   ];
-  
+
+  const filteredNavigationItems = navigationItems.filter(item => 
+    !item.requiresPersonalData || hasPersonalData
+  );
 
   const handleNavigation = (path: string) => {
     setIsNavigating(true);
     router.push(path);
   };
+
+
 
   useEffect(() => {
     const fetchProfilePicture = async () => {
@@ -191,7 +204,7 @@ export const DashboardHeader = () => {
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
           <div className="flex justify-between h-14 sm:h-16">
             {/* Left Section */}
-            <div className="flex items-center">
+            <div className="flex items-center flex-1">
               {/* Mobile Menu Button */}
               <Sheet>
                 <SheetTrigger asChild>
@@ -199,14 +212,16 @@ export const DashboardHeader = () => {
                     <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[280px] sm:w-80 p-0 bg-[#1A2A5B]">
+                <SheetContent side="left" className="w-[280px] sm:w-80 p-0 bg-[#1A2A5B] [&>button]:text-white">
                   <div className="h-full flex flex-col">
-                    {/* Sheet Header */}
+                    {/* Profile Section in Sheet */}
                     <div className="p-4 sm:p-6 bg-gradient-to-r from-[#1A2A5B] to-[#0A1A3B]">
                       <SheetHeader className="mb-4 sm:mb-6">
-                        <SheetTitle className="text-xl sm:text-2xl font-bold text-white">Menu</SheetTitle>
+                        <div className="flex justify-between items-center">
+                          <SheetTitle className="text-xl sm:text-2xl font-bold text-white">Menu</SheetTitle>
+                        </div>
                       </SheetHeader>
-  
+
                       {/* Profile Section in Sheet */}
                       <div className="flex items-center gap-3">
                         <div className="relative w-10 h-10 sm:w-12 sm:h-12">
@@ -238,7 +253,7 @@ export const DashboardHeader = () => {
   
                     {/* Navigation Items in Sheet */}
                     <div className="flex-1 overflow-auto p-4">
-                      {navigationItems.map((item) => (
+                      {filteredNavigationItems.map((item) => (
                         <Button
                           key={item.path}
                           variant="ghost"
@@ -254,8 +269,30 @@ export const DashboardHeader = () => {
                           <span className="ml-2">{item.name}</span>
                         </Button>
                       ))}
+
+                      {/* Show Profile button only if personal data exists */}
+                      {hasPersonalData && (
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start mb-2 text-gray-300 hover:text-white hover:bg-white/10"
+                          onClick={() => handleNavigation('/profile')}
+                          disabled={isNavigating}
+                        >
+                          <UserCircle className="w-5 h-5 text-[#ff8a47]" />
+                          <span className="ml-2">Profile</span>
+                        </Button>
+                      )}
+
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start mb-2 text-gray-300 hover:text-white hover:bg-white/10"
+                        onClick={() => handleNavigation('/settings')}
+                        disabled={isNavigating}
+                      >
+                        <Settings className="w-5 h-5 text-[#ff8a47]" />
+                        <span className="ml-2">Settings</span>
+                      </Button>
                     </div>
-  
                     <Separator className="bg-gray-700" />
   
                     {/* Logout Button in Sheet */}
@@ -283,28 +320,34 @@ export const DashboardHeader = () => {
                 </SheetContent>
               </Sheet>
   
-              {/* Logo and Title - With Beta badge next to title */}
-              <div className="flex items-center">
-                <img 
-                  src="/img/square_logo.png" 
-                  alt="Logo" 
-                  className="h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 lg:h-40 lg:w-40 object-contain -ml-2 sm:-ml-4 lg:-ml-6"
-                />
-                <div className="flex items-center gap-2 ml-3 sm:ml-6 lg:ml-10">
-                  <h1 className="text-lg sm:text-xl font-bold text-white hidden sm:block">
-                    {getPageTitle()}
-                  </h1>
-                  <div className="hidden sm:flex items-center">
-                    <span className="bg-white/10 text-white text-xs px-2 py-0.5 rounded-full border border-white/20 font-medium animate-pulse">
-                      BETA v1.3
-                    </span>
+              {/* Logo and Title Section */}
+              <div className="flex items-center justify-between w-full md:justify-start md:w-auto">
+                <div className="flex items-center">
+                  <img 
+                    src="/img/square_logo.png" 
+                    alt="Logo" 
+                    className="h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 lg:h-40 lg:w-40 object-contain"
+                  />
+                </div>
+                
+                {/* Updated Title Section with integrated beta tag */}
+                <div className="flex items-center ml-2 sm:ml-4 md:ml-6 lg:ml-10">
+                  <div className="flex flex-col items-start">
+                    <div className="inline-flex items-center gap-2 bg-white/5 rounded-lg p-2">
+                      <h1 className="text-base sm:text-lg md:text-xl font-bold text-white truncate max-w-[150px] sm:max-w-none">
+                        {getPageTitle()}
+                      </h1>
+                      <span className="inline-flex items-center bg-white/10 text-white/90 text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded-full border border-white/20 font-medium whitespace-nowrap">
+                        BETA v1.4
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Desktop Navigation */}
               <div className="hidden lg:flex items-center space-x-1 ml-4">
-                {navigationItems.map((item) => (
+                {filteredNavigationItems.map((item) => (
                   <Button
                     key={item.path}
                     variant={pathname === item.path ? "secondary" : "ghost"}
@@ -323,8 +366,8 @@ export const DashboardHeader = () => {
               </div>
             </div>
   
-            {/* Profile Dropdown */}
-            <div className="flex items-center">
+            {/* Profile Dropdown - Desktop Only */}
+            <div className="hidden md:flex items-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center space-x-2 text-white hover:bg-white/10">
@@ -352,13 +395,15 @@ export const DashboardHeader = () => {
                 <DropdownMenuContent align="end" className="w-48 sm:w-56 bg-white">
                   <DropdownMenuLabel className="text-[#1A2A5B] text-sm sm:text-base">Account</DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-[#1A2A5B]" />
-                  <DropdownMenuItem 
-                    onClick={() => handleNavigation('/profile')} 
-                    disabled={isNavigating || isLoggingOut}
-                    className="text-[#1A2A5B] hover:text-white hover:bg-[#1A2A5B] text-sm sm:text-base"
-                  >
-                    Profile
-                  </DropdownMenuItem>
+                  {hasPersonalData && (
+                    <DropdownMenuItem 
+                      onClick={() => handleNavigation('/profile')} 
+                      disabled={isNavigating || isLoggingOut}
+                      className="text-[#1A2A5B] hover:text-white hover:bg-[#1A2A5B] text-sm sm:text-base"
+                    >
+                      Profile
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem 
                     onClick={() => handleNavigation('/settings')}
                     disabled={isNavigating || isLoggingOut}

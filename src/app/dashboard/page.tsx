@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast'
 
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -22,7 +23,7 @@ import { RegistrationButton } from '@/components/dashboard/registration-button';
 import { useFullDataStore } from '@/lib/fulldata-store';
 import { useStudentProfileStore } from '@/lib/profile-store';
 import RegistrationRequiredNotice from '@/components/dashboard/registration-notice';
-import { GraduationCap, FileText, CreditCard } from "lucide-react";
+import { GraduationCap, FileText, CreditCard, X } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
 import unauthenticatedApiClient from '@/lib/clients/unauthenticated-api-client';
 import EnrollmentCompletionNotice from '@/components/dashboard/enrollment-notice';
@@ -267,8 +268,8 @@ const StudentRegistrationDialog: React.FC<StudentRegistrationDialogProps> = ({ t
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="max-w-[95vw] sm:max-w-5xl h-[90vh] overflow-hidden bg-gradient-to-br from-white to-indigo-50/30 border border-indigo-100 shadow-xl mx-2">
-        <DialogHeader className="bg-gradient-to-r from-[#1A2A5B] to-[#142247] text-white p-3 sm:p-4 rounded-t-lg mt-4">
+      <DialogContent className="max-w-[95vw] sm:max-w-5xl h-[90vh] flex flex-col bg-gradient-to-br from-white to-indigo-50/30 border border-indigo-100 shadow-xl mx-2">
+        <DialogHeader className="bg-gradient-to-r from-[#1A2A5B] to-[#142247] text-white p-3 sm:p-4 rounded-t-lg mt-4 flex-shrink-0">
           <DialogTitle className="text-xl sm:text-2xl font-bold tracking-tight">
             Student Information
           </DialogTitle>
@@ -276,9 +277,13 @@ const StudentRegistrationDialog: React.FC<StudentRegistrationDialogProps> = ({ t
             Please complete all required fields in the registration form below to proceed with your enrollment.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative">
           <StudentRegistrationForm />
         </div>
+        <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+          <X className="h-4 w-4 text-white" />
+          <span className="sr-only">Close</span>
+        </DialogClose>
       </DialogContent>
     </Dialog>
   );

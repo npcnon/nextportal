@@ -66,12 +66,12 @@ interface ClassSchedule {
 
 
 const ClassCard = ({ classItem }) => (
-  <div className="bg-white p-4 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-300 mb-4">
-    <div className="flex justify-between items-start">
-      <h3 className="font-semibold text-lg text-[#1A2A5B]">
+  <div className="bg-white p-3 sm:p-4 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-300 mb-4">
+    <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-0">
+      <h3 className="font-semibold text-base sm:text-lg text-[#1A2A5B]">
         {classItem.subjectCode} - {classItem.subjectDescription}
       </h3>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Badge variant="outline" className="bg-blue-50">
           {classItem.unit} {classItem.unit === 1 ? 'unit' : 'units'}
         </Badge>
@@ -102,7 +102,7 @@ const EnrolledClassesDialog = ({
   description 
 }) => (
   <Dialog open={isOpen} onOpenChange={onClose}>
-    <DialogContent className="max-w-3xl max-h-[80vh]">
+    <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] sm:max-h-[80vh]">
       <DialogHeader>
         <DialogTitle className="text-2xl font-bold">{title}</DialogTitle>
         <p className="text-gray-500">{description}</p>
@@ -119,28 +119,23 @@ const EnrolledClassesDialog = ({
 );
 
 // Modified AnimatedInfoCard to handle click
-const AnimatedInfoCard = ({ 
-  icon, 
-  label, 
-  value, 
-  subtext,
-  color,
-  onClick 
-}) => (
+const AnimatedInfoCard = ({ icon, label, value, subtext, color, onClick }) => (
   <div 
-    className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+    className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
     onClick={onClick}
   >
     <div className="flex items-center justify-between mb-2">
-      <div className="bg-white p-2 rounded-full shadow-sm">{icon}</div>
-      <Badge variant="secondary" className={`${color}`}>{label}</Badge>
+      <div className="bg-white p-1.5 sm:p-2 rounded-full shadow-sm">{icon}</div>
+      <Badge variant="secondary" className={`${color} text-xs sm:text-sm`}>{label}</Badge>
     </div>
-    <p className="font-bold text-xl">{value}</p>
+    <p className="font-bold text-lg sm:text-xl">{value}</p>
     {subtext && (
-      <p className="text-sm text-gray-500 mt-1">{subtext}</p>
+      <p className="text-xs sm:text-sm text-gray-500 mt-1">{subtext}</p>
     )}
   </div>
 );
+
+
 export default function AcademicsView() {
   const { isLoadingProfile, profileData } = useStudentProfileStore();
   const [currentSemester, setCurrentSemester] = useState<Semester | null>(null);
@@ -282,30 +277,30 @@ export default function AcademicsView() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white py-4 sm:py-8 px-2 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-lg border border-[#1A2A5B]/10 overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-[#1A2A5B] to-[#142247] px-8 py-12">
-            <div className="flex items-center gap-6">
-              <div className="h-24 w-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-4 border-white/30">
-                <GraduationCap className="h-12 w-12 text-white" />
+        <div className="bg-gradient-to-r from-[#1A2A5B] to-[#142247] px-4 sm:px-8 py-6 sm:py-12">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-4 border-white/30">
+                <GraduationCap className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white tracking-tight">Academic Journey</h1>
-                <p className="text-blue-100 mt-1 flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  {currentSemester 
-                    ? `${currentSemester.semester_name} ${currentSemester.school_year}` 
-                    : 'Current Term: Not Available'}
-                </p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight text-center sm:text-left">Academic Journey</h1>
+                  <p className="text-blue-100 mt-1 flex items-center gap-2 justify-center sm:justify-start">
+                    <Calendar className="h-4 w-4" />
+                    {currentSemester 
+                      ? `${currentSemester.semester_name} ${currentSemester.school_year}` 
+                      : 'Current Term: Not Available'}
+                  </p>
               </div>
             </div>
           </div>
           
           {/* Academic Summary */}
-          <div className="px-8 py-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="px-4 sm:px-8 py-4 sm:py-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <AnimatedInfoCard 
                 icon={<BookOpen className="text-green-500" />} 
                 label="Current Units" 
@@ -334,8 +329,8 @@ export default function AcademicsView() {
         </div>
 
         {/* Tabs Section */}
-        <Tabs defaultValue="dynamicGrades" className="bg-white rounded-xl shadow-lg border border-[#1A2A5B]/10 p-6">
-          <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100">
+        <Tabs defaultValue="dynamicGrades" className="bg-white rounded-xl shadow-lg border border-[#1A2A5B]/10 p-3 sm:p-6">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-0 mb-4 sm:mb-6 bg-gray-100">
             <TabsTrigger 
               value="dynamicGrades" 
               className="data-[state=active]:bg-[#1A2A5B] data-[state=active]:text-white"
@@ -388,9 +383,9 @@ export default function AcademicsView() {
                         </Badge>
                       </div>
                       
-                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="mt-3 grid grid-cols-1 gap-3 sm:gap-4">
                         <div className="space-y-2 text-gray-600">
-                          <p className="flex items-center gap-2">
+                          <p className="flex flex-wrap items-center gap-2">
                             <User className="h-4 w-4 text-blue-500" />
                             <span className="font-medium">Instructor:</span> {classItem.instructorFullName}
                           </p>
@@ -433,7 +428,7 @@ export default function AcademicsView() {
 
 // Skeleton Loading Component
 const AcademicsViewSkeleton = () => (
-  <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white py-8 px-4 sm:px-6 lg:px-8">
+  <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white py-4 sm:py-8 px-2 sm:px-6 lg:px-8">
     <div className="max-w-7xl mx-auto">
       {/* Header Skeleton */}
       <div className="bg-white rounded-xl shadow-lg mb-8">
