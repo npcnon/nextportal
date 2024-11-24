@@ -343,23 +343,70 @@ const handleNewSemesterClick = async () => {
     );
   }
 
-
+  const MobileScheduleCard = ({ schedule }: { schedule: Schedule }) => {
+    const isSelected = selectedSubjects.includes(schedule.schedule_id);
+    
+    return (
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-[#1A2A5B]/10 mb-4">
+        <div className="space-y-2">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="font-semibold text-[#1A2A5B]">{schedule.course.code}</h3>
+              <p className="text-sm text-[#1A2A5B]/90">{schedule.course.description}</p>
+            </div>
+            <span className="text-sm font-medium text-[#1A2A5B]/90">{schedule.course.units} units</span>
+          </div>
+          
+          <div className="text-sm text-[#1A2A5B]/90">
+            <p className="flex items-center gap-2">
+              <span className="font-medium">Schedule:</span>
+              {`${schedule.day} ${formatTime(schedule.time.start)} - ${formatTime(schedule.time.end)}`}
+            </p>
+            <p className="flex items-center gap-2">
+              <span className="font-medium">Instructor:</span>
+              {`${schedule.instructor.title} ${schedule.instructor.name}`}
+            </p>
+            <p className="flex items-center gap-2">
+              <span className="font-medium">Room:</span>
+              {schedule.room}
+            </p>
+          </div>
+          
+          <Button 
+            variant={isSelected ? "default" : "outline"}
+            size="sm"
+            onClick={() => handleSelectSubject(schedule.schedule_id)}
+            disabled={loading}
+            className={`
+              w-full mt-2 transition-all duration-300 font-medium
+              ${isSelected
+                ? "bg-gradient-to-r from-[#1A2A5B] to-[#1A2A5B] hover:from-[#1A2A5B] hover:to-[#1A2A5B]/90 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                : "border-2 border-[#1A2A5B]/20 text-[#1A2A5B] hover:bg-[#1A2A5B]/5 hover:border-[#1A2A5B]/30"
+              }
+            `}
+          >
+            {isSelected ? "Selected ✓" : "Select"}
+          </Button>
+        </div>
+      </div>
+    );
+  };
   return (
     <Card className="w-full bg-gradient-to-br from-white to-blue-50 border-none shadow-lg">
-      <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-[#1A2A5B] to-[#2a3c6d] text-white rounded-t-xl p-6">
+      <CardHeader className="flex flex-col sm:flex-row items-center justify-between bg-gradient-to-r from-[#1A2A5B] to-[#2a3c6d] text-white rounded-t-xl p-6">
         {fetchingSchedules ? (
           <div className="flex items-center space-x-3">
             <BookOpenCheck className="h-6 w-6 text-[#A9664E] animate-bounce" />
-            <CardTitle className="text-2xl font-bold tracking-tight">Loading Subjects...</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight">Loading Subjects...</CardTitle>
           </div>
         ) : (
           <>
-            <CardTitle className="text-2xl font-bold tracking-tight">Available Subjects</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight mb-4 sm:mb-0">Available Subjects</CardTitle>
             {schedules.length > 0 && (
               <Button 
                 onClick={handleSubmitEnlistment}
                 disabled={selectedSubjects.length === 0 || loading}
-                className="ml-auto bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700 shadow-lg transition-all duration-300 font-semibold"
+                className="w-full sm:w-auto bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700 shadow-lg transition-all duration-300 font-semibold"
               >
                 {loading ? (
                   <>
@@ -382,14 +429,14 @@ const handleNewSemesterClick = async () => {
         )}
       </CardHeader>
 
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         {fetchingSchedules ? (
           <SubjectTableSkeleton />
         ) : schedules.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 space-y-6">
             <div className="text-center space-y-4">
               <h3 className="font-bold text-xl text-[#1A2A5B]">No Subjects Available</h3>
-              <p className="text-[#1A2A5B]/70 max-w-md">
+              <p className="text-[#1A2A5B]/70 max-w-md px-4">
                 There are currently no subjects available for enrollment in this semester. 
                 Please check back later or contact your administrator.
               </p>
@@ -405,8 +452,10 @@ const handleNewSemesterClick = async () => {
             </Button>
           </div>
         ) : (
-          <div className="rounded-xl overflow-hidden border border-[#1A2A5B]/10 shadow-sm">
-            <Table>
+          <>
+            {/* Desktop view */}
+            <div className="hidden sm:block rounded-xl overflow-hidden border border-[#1A2A5B]/10 shadow-sm">
+              <Table>
               <TableHeader>
                 <TableRow className="bg-gradient-to-r from-[#1A2A5B]/5 to-[#1A2A5B]/10">
                   <TableHead className="font-bold text-[#1A2A5B] py-4">Course Code</TableHead>
@@ -456,8 +505,16 @@ const handleNewSemesterClick = async () => {
                   );
                 })}
               </TableBody>
-            </Table>
-          </div>
+              </Table>
+            </div>
+
+            {/* Mobile view */}
+            <div className="sm:hidden">
+              {schedules.map((schedule) => (
+                <MobileScheduleCard key={schedule.schedule_id} schedule={schedule} />
+              ))}
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

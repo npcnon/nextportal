@@ -58,6 +58,7 @@ export default function StudentDashboard(): JSX.Element {
   const [isLoadingCourse, setIsLoadingCourse] = useState(false);
 
   const { toast } = useToast()
+
   const MountedComponents = {
     Enlistment: ({ show, personal_data = [] }: MountedComponentProps) => {
       if (!Array.isArray(personal_data)) return null; // Add safety check

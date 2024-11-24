@@ -23,7 +23,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { z } from "zod";
-import { Controller, FormProvider, useForm, useFormContext } from "react-hook-form";
+import { Controller, FieldErrors, FormProvider, useForm, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RequiredFormField } from './required-input';
@@ -1504,11 +1504,11 @@ const StudentRegistrationForm: React.FC = () => {
     const { programs, semesters, isLoading: isLoadingAcademicData } = useAcademicData({
       campusId: profileData?.profile?.student_info?.campus
     });
-  const methods = useForm<StudentFormData>({
-    resolver: zodResolver(studentFormSchema),
-    defaultValues: formData,
-    mode: "onSubmit",
-  });
+    const methods = useForm<StudentFormData>({
+      resolver: zodResolver(studentFormSchema),
+      defaultValues: formData,
+      mode: "onSubmit",
+    });
 
   useEffect(() => {
     if (semesters.length > 0 && !formData.academic_background.semester_entry) {
@@ -1609,9 +1609,7 @@ const StudentRegistrationForm: React.FC = () => {
 
 
 
-
-
-const handleFormSubmit = async (data: StudentFormData) => {
+  const onSubmit = async (data: StudentFormData) => {
     setIsSubmitting(true);
     try {
       const response = await apiClient.post('full-student-data/', data);
@@ -1623,8 +1621,6 @@ const handleFormSubmit = async (data: StudentFormData) => {
       });
       setTimeout(() => {
         window.location.href = window.location.href;
-        // OR
-        // window.location.replace(window.location.href);
       }, 1500);
       methods.reset(initialFormState);
     } catch (error) {
@@ -1639,6 +1635,89 @@ const handleFormSubmit = async (data: StudentFormData) => {
     }
   };
 
+  const onError = (errors: FieldErrors<StudentFormData>) => {
+    const sections = [];
+    if (Object.keys(errors.personal_data || {}).length > 0) {
+      sections.push("Personal Information");
+    }
+    if (Object.keys(errors.add_personal_data || {}).length > 0) {
+      sections.push("Contact Information");
+    }
+    if (Object.keys(errors.family_background || {}).length > 0) {
+      sections.push("Family Background");
+    }
+    if (Object.keys(errors.academic_background || {}).length > 0) {
+      sections.push("Academic Information");
+    }
+
+    toast({
+      title: "Validation Error",
+      description: `Please check the following sections: ${sections.join(", ")}`,
+      variant: "destructive",
+    });
+  };
+
+  const handleFormSubmit = async (data: StudentFormData) => {
+    setIsSubmitting(true);
+    try {
+      // Check if the form is valid first
+      const isValid = await methods.trigger();
+      console.log("isvalid triggered")
+      if (!isValid) {
+        // Get all form errors
+        const errors = methods.formState.errors;
+        
+        // Check which sections have errors
+        const sections = [];
+        if (Object.keys(errors.personal_data || {}).length > 0) {
+          sections.push("Personal Information");
+        }
+        if (Object.keys(errors.add_personal_data || {}).length > 0) {
+          sections.push("Contact Information");
+        }
+        if (Object.keys(errors.family_background || {}).length > 0) {
+          sections.push("Family Background");
+        }
+        if (Object.keys(errors.academic_background || {}).length > 0) {
+          sections.push("Academic Information");
+        }
+  
+        // Show toast with sections that have errors
+        toast({
+          title: "Validation Error",
+          description: `Please check the following sections: ${sections.join(", ")}`,
+          variant: "destructive",
+        });
+        
+        setIsSubmitting(false);
+        return;
+      }
+  
+      // If form is valid, proceed with submission
+      const response = await apiClient.post('full-student-data/', data);
+      
+      toast({
+        title: "Success!",
+        description: "Your registration has been submitted successfully.",
+        variant: "default",
+      });
+      
+      setTimeout(() => {
+        window.location.href = window.location.href;
+      }, 1500);
+      
+      methods.reset(initialFormState);
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem submitting your registration. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
 
   if (isLoading) {
@@ -1681,7 +1760,7 @@ const handleFormSubmit = async (data: StudentFormData) => {
       <div className="container mx-auto px-4">
         <Card className="max-w-5xl mx-auto">
           <CardContent>
-            <form onSubmit={methods.handleSubmit(handleFormSubmit)} noValidate>              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <form onSubmit={methods.handleSubmit(onSubmit, onError)} noValidate>              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <ScrollArea className="w-full">
                   <TabsList className="w-full justify-start">
                     <TabsTrigger value="personal">Personal Info</TabsTrigger>
@@ -1725,7 +1804,6 @@ const handleFormSubmit = async (data: StudentFormData) => {
                     type="submit"
                     className="min-w-[100px]" 
                     disabled={isSubmitting}
-                    onClick={() => methods.handleSubmit(handleFormSubmit)()}
                   >
                     {isSubmitting ? (
                       <div className="flex items-center justify-center">
