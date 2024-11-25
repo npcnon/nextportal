@@ -148,18 +148,18 @@ export const StatusCards: React.FC = () => {
 
       <Dialog open={isProspectusModalOpen} onOpenChange={setIsProspectusModalOpen}>
         <DialogTrigger asChild>
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-blue-50/50 to-white border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer">
-            <CardContent className="pt-4 flex flex-col items-center justify-center text-center">
-              <FiBookOpen className="text-4xl text-blue-600 mb-3 animate-bounce" />
+          <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-blue-50/50 to-white border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer text-center">
+            <CardContent className="pt-4 flex flex-col items-center justify-center text-center gap-4">
+              <FiBookOpen className="text-4xl text-blue-600 animate-bounce" />
               <p className="text-lg text-black/70">Prospectus Subjects</p>
             </CardContent>
           </Card>
-        </DialogTrigger>
+        </DialogTrigger>  
         <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>Prospectus Subjects</DialogTitle>
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-center">Prospectus Subjects</DialogTitle>
           </DialogHeader>
-          <div className="overflow-y-auto max-h-[70vh] pr-4">
+          <div className="overflow-y-auto max-h-[70vh] pr-4 flex justify-center">
             <ProspectusSubjectTable />
           </div>
         </DialogContent>
