@@ -645,7 +645,8 @@ const ConfirmationDialog = () => (
       </div>
 
       <div className="space-y-2 transition-all duration-300 group">
-      <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">          Suffix Name
+      <label className="block text-xs sm:text-sm font-medium text-gray-700 group-focus-within:text-[#1A2A5B]">    
+        Suffix
         </label>
         <Input
           required

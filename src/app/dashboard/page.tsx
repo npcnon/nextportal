@@ -80,8 +80,7 @@ export default function StudentDashboard(): JSX.Element {
       return (
         <div style={{ display: show ? 'block' : 'none' }}>
           <div className="space-y-6">
-            {personal_data && personal_data.length > 0 && 
-             personal_data[0].status != 'pending' 
+            {personal_data && personal_data.length > 0
               ? <DocumentSubmission /> 
               : <RegistrationRequiredNotice />
             }

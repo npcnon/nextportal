@@ -88,7 +88,7 @@ interface FamilyBackground {
   mother_contact_number?: string;
   mother_email?: string;
   mother_occupation?: string;
-  mother_income?: string;
+  mother_income?: number;
   mother_company?: string;
   guardian_fname?: string;
   guardian_mname?: string;
@@ -156,8 +156,7 @@ const STATUS_CHOICES = [
 const nameSchema = z.string()
   .min(1, "Name is required")
   .max(100, "Name must not exceed 100 characters")
-  .regex(NAME_REGEX, "Name can only contain letters, spaces, hyphens and apostrophes");
-
+  .regex(/^[\p{L}\s'-]+$/u, "Name can only contain letters, spaces, hyphens, and apostrophes");
 const emailSchema = z.string()
   .email("Invalid email address")
   .regex(EMAIL_REGEX, "Invalid email format");
@@ -217,7 +216,7 @@ const familyBackgroundSchema = z.object({
   mother_contact_number: phoneSchema.optional(),
   mother_email: emailSchema.optional(),
   mother_occupation: z.string().optional(),
-  mother_income: z.string().optional(),
+  mother_income: z.number().min(0).optional(),
   mother_company: z.string().optional(),
   guardian_fname: nameSchema.optional(),
   guardian_mname: nameSchema.optional(),

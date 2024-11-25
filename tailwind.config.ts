@@ -11,6 +11,8 @@ const config: Config = {
   	extend: {
 		animation: {
 			loading: 'loading 1s ease-in-out infinite',
+			'lightning': 'lightning 1s infinite',
+			'pulse-glow': 'pulse 2s infinite',
 		  },
 		  keyframes: {
 			loading: {
@@ -18,6 +20,10 @@ const config: Config = {
 			  '50%': { width: '70%' },
 			  '100%': { width: '100%' },
 			},
+			'lightning': {
+				'0%, 100%': { transform: 'scale(1)' },
+				'50%': { transform: 'scale(1.2)' },
+			  },
 		  },
   		colors: {
   			background: 'hsl(var(--background))',

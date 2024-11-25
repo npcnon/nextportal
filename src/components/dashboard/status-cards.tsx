@@ -7,7 +7,9 @@ import apiClient, { AuthenticationError } from '@/lib/clients/authenticated-api-
 import { useFullDataStore } from '@/lib/fulldata-store';
 import { cn } from "@/lib/utils";
 import { FiCheckCircle, FiAlertCircle, FiFileText, FiBookOpen } from 'react-icons/fi';
-
+import { useProspectusStore } from '@/lib/prospectus-store';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ProspectusSubjectTable } from './prospectus-subject-table';
 interface Document {
   document_type: string;
 }
@@ -40,7 +42,8 @@ export const StatusCards: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
   const totalRequiredDocuments = 8;
-  
+  const [isProspectusModalOpen, setIsProspectusModalOpen] = useState(false);
+  const { prospectusSubjects } = useProspectusStore();
   const { personal_data, isLoading } = useFullDataStore();
 
   useEffect(() => {
@@ -143,21 +146,24 @@ export const StatusCards: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Enlisted Subjects Card */}
-      <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-blue-50/50 to-white border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300">
-        <CardContent className="pt-4 flex items-center">
-          <FiBookOpen className="text-4xl text-blue-600 mr-3" />
-          <div>
-            <div className="text-xl font-bold text-black mb-1">4/8</div>
-            <p className="text-sm text-black/70">Subjects selected</p>
-            <Progress 
-              value={50} 
-              className="mt-3 h-2 bg-blue-100 [&>div]:bg-blue-600"
-            />
+      <Dialog open={isProspectusModalOpen} onOpenChange={setIsProspectusModalOpen}>
+        <DialogTrigger asChild>
+          <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-blue-50/50 to-white border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer">
+            <CardContent className="pt-4 flex flex-col items-center justify-center text-center">
+              <FiBookOpen className="text-4xl text-blue-600 mb-3 animate-bounce" />
+              <p className="text-lg text-black/70">Prospectus Subjects</p>
+            </CardContent>
+          </Card>
+        </DialogTrigger>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Prospectus Subjects</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[70vh] pr-4">
+            <ProspectusSubjectTable />
           </div>
-        </CardContent>
-      </Card>
-
+        </DialogContent>
+        </Dialog>
       {/* Requirements Card */}
       <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-blue-50/50 to-white border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300">
         <CardContent className="pt-4 flex items-center">
