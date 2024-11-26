@@ -37,6 +37,10 @@ export function getGradeStatus(grades: Partial<Record<GradeType, string | null>>
 export function transformGradesData(originalGrades: GradeEntry[]): GradeEntry[] {
   return originalGrades.map(entry => ({
     ...entry,
-    grades: normalizeGrades(entry.grades)
+    grades: {
+      Prelim: entry.grades.Prelim === "5.0" ? "N/A" : entry.grades.Prelim,
+      Midterm: entry.grades.Midterm === "5.0" ? "N/A" : entry.grades.Midterm,
+      Final: entry.grades.Final === "5.0" ? "N/A" : entry.grades.Final
+    }
   }));
 }

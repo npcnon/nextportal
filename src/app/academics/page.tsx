@@ -215,10 +215,11 @@ export default function AcademicsView() {
 
 
 
-          
-          const enrolledClassesResponse = await axios.get(
-            `https://node-mysql-signup-verification-api.onrender.com/enrollment/external/all-enrolled-classes`
-          );
+          const enrolledClassesResponse = await apiClient.post(`proxy`,
+            {
+              url : `https://node-mysql-signup-verification-api.onrender.com/enrollment/external/all-enrolled-classes`
+            }
+          )
           const currentSemesterId = activeSemester.id;
           
           // Get all classes for this student

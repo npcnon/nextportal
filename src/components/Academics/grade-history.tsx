@@ -90,19 +90,19 @@ export const GradeHistory: React.FC = () => {
                 gpa: '0.00'
               };
             }
-
+          
             acc[key].subjects.push({
               subjectcode: grade.subjectcode,
               grades: {
-                Prelim: grade.grades.Prelim || null,
-                Midterm: grade.grades.Midterm || null,
-                Final: grade.grades.Final || null
+                Prelim: grade.grades.Prelim === '5.0' ? 'N/A' : grade.grades.Prelim,
+                Midterm: grade.grades.Midterm === '5.0' ? 'N/A' : grade.grades.Midterm,
+                Final: grade.grades.Final === '5.0' ? 'N/A' : grade.grades.Final
               }
             });
-
+          
             // Calculate GPA after adding all subjects
             acc[key].gpa = calculateSemesterGPA(acc[key].subjects);
-
+          
             return acc;
           }, {});
 
