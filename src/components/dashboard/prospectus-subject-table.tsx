@@ -27,6 +27,7 @@ import {
 } from 'react-icons/fi';
 import { ProspectusSubject } from '@/types/prospectus';
 import { Button } from '../ui/button';
+import unauthenticatedApiClient from '@/lib/clients/unauthenticated-api-client';
 
 export function ProspectusSubjectCard() {
   const { 
@@ -74,10 +75,25 @@ export function ProspectusSubjectTable() {
     const [selectedSubject, setSelectedSubject] = useState<ProspectusSubject | null>(null);
   
     useEffect(() => {
-      const programCode = profileData.profile.student_info.program;
-      if (programCode) {
-        fetchProspectusSubjects(programCode.toString());
-      }
+      const fetchProgramCode = async () => {
+        const campusId = profileData.profile.student_info.campus;
+        const programId = profileData.profile.student_info.program;
+    
+        try {
+          const response = await unauthenticatedApiClient.get(`program/?campus_id=${campusId}`);
+          const programs = response.data.results;
+    
+          const matchedProgram = programs.find(program => program.id === programId);
+    
+          if (matchedProgram) {
+            fetchProspectusSubjects(matchedProgram.code);
+          }
+        } catch (error) {
+          console.error('Error fetching program code:', error);
+        }
+      };
+    
+      fetchProgramCode();
     }, [profileData]);
   
     const groupedSubjects = useMemo(() => {

@@ -658,7 +658,7 @@ const ConfirmationDialog = () => (
             border-gray-200 focus:border-[#1A2A5B] focus:ring-[#1A2A5B]/20
             ${errors.suffix ? 'border-red-500 focus:border-red-500' : ''}
           `}
-          placeholder="Enter your last name"
+          placeholder="Enter Suffix"
         />
         {errors.suffix && (
           <motion.p 

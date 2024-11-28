@@ -140,6 +140,8 @@ export default function AcademicsView() {
   const { isLoadingProfile, profileData } = useStudentProfileStore();
   const [currentSemester, setCurrentSemester] = useState<Semester | null>(null);
   const [enrolledClasses, setEnrolledClasses] = useState<EnrolledClass[]>([]);
+  const [allEnrolledClasses, setAllEnrolledClasses] = useState<EnrolledClass[]>([]);
+
   const [classSchedules, setClassSchedules] = useState<ClassSchedule[]>([]);
   const [totalUnits, setTotalUnits] = useState(0);
   const [currentSemesterUnits, setCurrentSemesterUnits] = useState(0);
@@ -162,9 +164,7 @@ export default function AcademicsView() {
     ]
   };
   const handleShowCurrentClasses = () => {
-    const currentClasses = enrolledClasses.filter(
-      classItem => classItem.semester_id === currentSemester?.id
-    );
+    const currentClasses = enrolledClasses;  // These are already current semester classes
     setDialogContent({
       classes: currentClasses,
       title: 'Current Semester Classes',
@@ -172,10 +172,13 @@ export default function AcademicsView() {
     });
     setDialogOpen(true);
   };
-
+  
   const handleShowAllClasses = () => {
+    // You'll need to fetch all classes again or store them in state
+
+
     setDialogContent({
-      classes: enrolledClasses,
+      classes: allEnrolledClasses,
       title: 'All Enrolled Classes',
       description: 'Complete academic history'
     });
@@ -202,67 +205,68 @@ export default function AcademicsView() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!isLoadingProfile && profileData.profile.student_info.campus) {
+      if (!isLoadingProfile && profileData?.profile?.student_info?.campus) {
         try {
           setIsLoading(true);
-
+  
           // Fetch Semester
           const semesterResponse = await apiClient.get(`semester/`, {
             params: { campus_id: profileData.profile.student_info.campus }
           });
           const activeSemester = semesterResponse.data.results.find((sem: Semester) => sem.is_active) || semesterResponse.data.results[0];
           setCurrentSemester(activeSemester);
-
-
-
+  
           const enrolledClassesResponse = await apiClient.post(`proxy`,
             {
               url : `https://node-mysql-signup-verification-api.onrender.com/enrollment/external/all-enrolled-classes`
             }
           )
+          
           const currentSemesterId = activeSemester.id;
           
-          // Get all classes for this student
-          const allStudentClasses = enrolledClassesResponse.data.filter(
+          // Filter all classes for this student
+          const studentAllEnrolledClasses: EnrolledClass[] = enrolledClassesResponse.data.filter(
             (classItem: EnrolledClass) => classItem.student_id === profileData.student_id
           );
-          const studentEnrolledClasses = allStudentClasses.filter(
+  
+          // Get classes for current semester
+          const studentCurrentSemesterClasses: EnrolledClass[] = studentAllEnrolledClasses.filter(
             (classItem: EnrolledClass) => classItem.semester_id === currentSemesterId
           );
-          console.log('Raw Enrolled Classes:', enrolledClassesResponse.data);
-          console.log('Filtered Enrolled Classes:', studentEnrolledClasses);
-
+  
           // Set filtered enrolled classes
-          setEnrolledClasses(studentEnrolledClasses);
-
-        // Calculate current semester units
-        const currentSemUnits = studentEnrolledClasses.reduce(
-          (total: number, classItem: EnrolledClass) => total + classItem.unit,
-          0
-        );
-        setCurrentSemesterUnits(currentSemUnits);
-
-        // Calculate total units across all semesters
-        const allSemestersUnits = allStudentClasses.reduce(
-          (total: number, classItem: EnrolledClass) => total + classItem.unit,
-          0
-        );
-        setTotalUnitsAllSemesters(allSemestersUnits);
-
+          setEnrolledClasses(studentCurrentSemesterClasses);
+          setAllEnrolledClasses(studentAllEnrolledClasses);
+          console.log(`all enrolled classes: ${studentAllEnrolledClasses}`)
+          // Calculate current semester units
+          const currentSemUnits = studentCurrentSemesterClasses.reduce(
+            (total: number, classItem: EnrolledClass) => total + classItem.unit,
+            0
+          );
+          setCurrentSemesterUnits(currentSemUnits);
+  
+          // Calculate total units across all semesters
+          const totalUnits = studentAllEnrolledClasses.reduce(
+            (total: number, classItem: EnrolledClass) => total + classItem.unit,
+            0
+          );
+          setTotalUnitsAllSemesters(totalUnits);
+  
           // Fetch All Schedules
           const schedulesResponse = await apiClient.post(`proxy`,
             {
               url : 'https://benedicto-scheduling-backend.onrender.com/teachers/all-subjects'
             }
           )
-
+  
           // Filter schedules based on enrolled class IDs
-          const enrolledClassIds = studentEnrolledClasses.map((ec: EnrolledClass) => ec.class_id);
+          const enrolledClassIds = studentCurrentSemesterClasses.map((ec: EnrolledClass) => ec.class_id);
           const filteredSchedules = schedulesResponse.data.filter((schedule: ClassSchedule) => 
             enrolledClassIds.includes(schedule.id)
           );
           setClassSchedules(filteredSchedules);
           console.log('filtered schedules: ', filteredSchedules)
+  
         } catch (error) {
           console.error('Error fetching data:', error);
         } finally {
@@ -270,7 +274,7 @@ export default function AcademicsView() {
         }
       }
     };
-
+  
     fetchData();
   }, [isLoadingProfile, profileData]);
 

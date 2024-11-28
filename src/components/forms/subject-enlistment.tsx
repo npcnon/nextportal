@@ -134,6 +134,7 @@ const [isEnrolling, setIsEnrolling] = useState(false);
       personal_data && 
       personal_data.length > 0 && 
       personal_data[0].status != 'pending' && 
+      personal_data[0].status != 'unverified' && 
       academic_background?.[0] &&
       profileData?.profile?.student_info?.campus
     ) {
@@ -283,13 +284,36 @@ const handleNewSemesterClick = async () => {
       params: { campus_id: profileData.profile.student_info.campus }
     });
     const activeSemester = semesterResponse.data.results.find((sem: Semester) => sem.is_active) || semesterResponse.data.results[0];
-
+    if (activeSemester.semester_name = "1st Semester"){
+      if(academic_background[0].year_level == "First Year")
+      {
+        academic_background[0].year_level = "Second Year"
+      }
+      else if(academic_background[0].year_level="Second Year")
+      {
+        academic_background[0].year_level = "Third Year"
+      }
+      else if(academic_background[0].year_level="Third Year")
+      {
+        academic_background[0].year_level = "Fourth Year"
+      }
+      else if(academic_background[0].year_level="Fourth Year")
+      {
+        academic_background[0].year_level = "Graduated"
+      }
+      await apiClient.put(`deactivate_or_modify_stdntacademicbackground/${personal_data[0]?.fulldata_applicant_id}/False`, {
+      "year_level": academic_background[0].year_level
+      });
+   
+    }
     await axios.post('https://node-mysql-signup-verification-api.onrender.com/students/external/add-enrollment', {
       "fulldata_applicant_id": personal_data[0]?.fulldata_applicant_id,
       "semester_id": activeSemester.id,
     });
     
     setShowEnlistment(true);
+
+
     toast({
       title: "Success",
       description: "You can now proceed with subject enlistment.",

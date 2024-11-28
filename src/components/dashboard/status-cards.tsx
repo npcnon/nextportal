@@ -14,7 +14,7 @@ interface Document {
   document_type: string;
 }
 
-type StatusType = 'officially enrolled' | 'pending' | 'rejected' | 'initially enrolled';
+type StatusType = 'unverified'|'officially enrolled' | 'pending' | 'rejected' | 'initially enrolled';
 
 interface StatusDisplay {
   gradient: string;
@@ -80,6 +80,13 @@ export const StatusCards: React.FC = () => {
   const documentProgress = (submittedDocumentsCount / totalRequiredDocuments) * 100;
 
   const statusDisplay: Record<StatusType, StatusDisplay> = {
+    'unverified': {
+      gradient: '',
+      textColor: 'text-black',
+      label: 'Unverified',
+      progressColor: '[&>div]:bg-blue-600',
+      Icon: FiAlertCircle
+    },
     'pending': {
       gradient: '',
       textColor: 'text-black',
@@ -121,8 +128,8 @@ export const StatusCards: React.FC = () => {
     );
   }
 
-  const enrollmentStatus = personal_data?.[0]?.status as StatusType || 'pending';
-  const statusInfo = statusDisplay[enrollmentStatus] || statusDisplay['pending'];
+  const enrollmentStatus = personal_data?.[0]?.status as StatusType || 'unverified';
+  const statusInfo = statusDisplay[enrollmentStatus] || statusDisplay['unverified'];
 
   return (
     <div className="grid gap-4 md:grid-cols-3 mb-6">

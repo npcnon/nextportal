@@ -4,8 +4,9 @@ import { ProspectusSubject } from '@/types/prospectus';
 
 export const getProspectusSubjects = async (programCode: string): Promise<ProspectusSubject[]> => {
   try {
+    console.log(`program code: ${programCode}`)
     const response = await axios.get(
-      `https://node-mysql-signup-verification-api.onrender.com/prospectus/external/get-all-prospectus-subjects/?${programCode}`
+      `https://node-mysql-signup-verification-api.onrender.com/prospectus/external/get-all-prospectus-subjects/?programCode=${programCode}`
     );
     return response.data;
   } catch (error) {

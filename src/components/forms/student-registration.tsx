@@ -147,7 +147,7 @@ const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const STATUS_CHOICES = [
   'officially enrolled',
   'pending',
-  'verified',
+  'unverified',
   'rejected',
   'initially enrolled',
 ] as const;
@@ -188,7 +188,7 @@ const personalDataSchema = z.object({
   country: z.string().min(1, "Country is required").max(50),
   email: emailSchema,
   acr: z.string().max(100).optional(),
-  status: z.enum(STATUS_CHOICES).default('pending'),
+  status: z.enum(STATUS_CHOICES).default('unverified'),
   on_site: z.boolean().default(false)
 });
 
@@ -1081,8 +1081,8 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
   ];
 
   const studentTypeOptions = [
-    { value: "Graduate", label: "Graduate" },
-    { value: "Undergraduate", label: "Undergraduate" }
+    { value: "Regular", label: "Regular" },
+    { value: "Irregular", label: "Irregular" }
   ];
 
   const yearLevelOptions = [
@@ -1187,7 +1187,7 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
           <RequiredFormField
             type="select"
             name="academic_background.application_type"
-            label="Student Type"
+            label="Application Type"
             control={control}
             options={applicationTypeOptions}
             defaultValue={formData.academic_background.application_type}
@@ -1197,7 +1197,7 @@ const AcademicBackgroundForm: React.FC<InfoFormProps & {
           <RequiredFormField
             type="select"
             name="academic_background.student_type"
-            label="Application Type"
+            label="Student Type"
             control={control}
             options={studentTypeOptions}
             defaultValue={formData.academic_background.student_type}

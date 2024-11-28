@@ -32,7 +32,7 @@ interface Document {
   id: number;
   document_type: DocumentType;
   file_type: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'unverified' |'pending' | 'approved' | 'rejected';
   filename: string;
   uploaded_at: string;
   temporary_url?: string;
