@@ -1,5 +1,4 @@
 "use client"
-
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
@@ -11,7 +10,8 @@ import {
   Loader2, 
   X,
   Badge,
-  Filter
+  Filter,
+  File
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import StudentEditModal from '@/components/admin/student-modal';
+import StudentDocumentsModal from '@/components/admin/document-modal';
 import unauthenticatedApiClient from '@/lib/clients/unauthenticated-api-client';
 import apiClient from '@/lib/clients/authenticated-api-client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,6 +35,10 @@ export default function AdminDashboard() {
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
+  const [selectedStudentEmail, setSelectedStudentEmail] = useState(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isUpdatingSave, setIsUpdatingSave] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentStatus, setCurrentStatus] = useState('All');
@@ -46,6 +51,11 @@ export default function AdminDashboard() {
     initiallyEnrolledStudents: 0,
     newThisWeek: 0
   });
+
+  const handleViewDocuments = (email) => {
+    setSelectedStudentEmail(email);
+    setIsDocumentsModalOpen(true);
+  };
   const STATUS_COLORS = {
     'unverified': 'bg-yellow-100 text-yellow-800',
     'pending': 'bg-blue-100 text-blue-800',
@@ -53,6 +63,8 @@ export default function AdminDashboard() {
     'officially enrolled': 'bg-green-100 text-green-800',
     'initially enrolled': 'bg-purple-100 text-purple-800'
   };
+
+  
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -132,6 +144,7 @@ export default function AdminDashboard() {
   );
   const handleSaveStudent = async (updatedStudent) => {
     try {
+      setIsUpdatingSave(true);
       // Personal Student Data
       await unauthenticatedApiClient.put(`deactivate_or_modify_personal-student-data/${updatedStudent.fulldata_applicant_id}/False`, {
         "f_name": updatedStudent.personal_data.f_name,
@@ -219,16 +232,43 @@ export default function AdminDashboard() {
         "program": updatedStudent.academic_history.program
       });
       
-      // Update the local state to reflect changes
-      setStudents(students.map(s => 
-        s.fulldata_applicant_id === updatedStudent.fulldata_applicant_id 
-          ? updatedStudent 
-          : s
-      ));
-    } catch (error) {
-      console.error('Failed to save student:', error);
-    }
-  };
+       // Update the local state to reflect changes
+    const updatedStudents = students.map(s => 
+      s.fulldata_applicant_id === updatedStudent.fulldata_applicant_id 
+        ? updatedStudent 
+        : s
+    );
+    
+    setStudents(updatedStudents);
+    setFilteredStudents(
+      currentStatus === 'All' 
+        ? updatedStudents 
+        : updatedStudents.filter(student => student.personal_data.status === currentStatus)
+    );
+
+    // Recalculate stats
+    setStats({
+      totalStudents: updatedStudents.length,
+      unverifiedStudents: updatedStudents.filter(s => s.personal_data.status === 'unverified').length,
+      pendingStudents: updatedStudents.filter(s => s.personal_data.status === 'pending').length,
+      officiallyEnrolledStudents: updatedStudents.filter(s => s.personal_data.status === 'officially enrolled').length,
+      rejectedStudents: updatedStudents.filter(s => s.personal_data.status === 'rejected').length,
+      initiallyEnrolledStudents: updatedStudents.filter(s => s.personal_data.status === 'initially enrolled').length,
+      newThisWeek: updatedStudents.filter(
+        student => new Date(student.personal_data.created_at) > 
+          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      ).length
+    });
+
+    setIsModalOpen(false);
+  } catch (error) {
+    console.error('Failed to save student:', error);
+    // Optionally show an error toast or message
+  } finally {
+    setIsUpdatingSave(false);
+    window.location.reload();
+  }
+};
   // Super Aesthetic Loading Component
   if (isLoading) {
     return (
@@ -306,47 +346,84 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Expanded Stats Cards */}
-      <div className="grid grid-cols-5 gap-4 mb-8">
-        {[
-          { label: 'Total Students', value: stats.totalStudents, Icon: Users },
-          { 
-            label: 'Unverified', 
-            value: stats.unverifiedStudents, 
-            Icon: UserX, 
-            variant: 'text-yellow-500' 
-          },
-          { 
-            label: 'Pending', 
-            value: stats.pendingStudents, 
-            Icon: LayoutDashboard, 
-            variant: 'text-blue-500' 
-          },
-          { 
-            label: 'Officially Enrolled', 
-            value: stats.officiallyEnrolledStudents, 
-            Icon: UserCheck, 
-            variant: 'text-green-500' 
-          },
-          { 
-            label: 'Rejected', 
-            value: stats.rejectedStudents, 
-            Icon: X, 
-            variant: 'text-red-500' 
-          }
-        ].map(({ label, value, Icon, variant = '' }, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{label}</CardTitle>
-              <Icon className={`h-4 w-4 text-muted-foreground ${variant}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{value}</div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Expanded Stats Cards and Status Legend */}
+      <div className="mb-8">
+        <div className="grid grid-cols-6 gap-4">
+          {[
+            { 
+              label: 'Total Students', 
+              value: stats.totalStudents, 
+              Icon: Users,
+              color: 'bg-gray-100 text-gray-800 border-gray-300',
+              description: 'All registered students'
+            },
+            { 
+              label: 'Unverified', 
+              value: stats.unverifiedStudents,
+              Icon: UserX, 
+              color: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+              description: 'Students awaiting initial verification'
+            },
+            { 
+              label: 'Pending', 
+              value: stats.pendingStudents,
+              Icon: LayoutDashboard, 
+              color: 'bg-blue-100 text-blue-800 border-blue-300',
+              description: 'Applications under review'
+            },
+            { 
+              label: 'Initially Enrolled', 
+              value: stats.initiallyEnrolledStudents,
+              Icon: UserCheck, 
+              color: 'bg-purple-100 text-purple-800 border-purple-300',
+              description: 'Students in initial enrollment phase'
+            },
+            { 
+              label: 'Officially Enrolled', 
+              value: stats.officiallyEnrolledStudents,
+              Icon: UserCheck, 
+              color: 'bg-green-100 text-green-800 border-green-300',
+              description: 'Students fully confirmed and enrolled'
+            },
+            { 
+              label: 'Rejected', 
+              value: stats.rejectedStudents,
+              Icon: X, 
+              color: 'bg-red-100 text-red-800 border-red-300',
+              description: 'Applications not accepted'
+            }
+          ].map(({ label, value, color, Icon, description }, index) => (
+            <div 
+              key={index} 
+              className={`
+                ${color} 
+                rounded-xl 
+                p-4 
+                shadow-md 
+                hover:shadow-lg 
+                transition-all 
+                duration-300 
+                ease-in-out 
+                transform 
+                hover:-translate-y-1 
+                border-l-4 
+                flex 
+                flex-col 
+                justify-between
+              `}
+            >
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center space-x-2">
+                  <Icon className="h-6 w-6 opacity-70" />
+                  <span className="font-semibold text-sm">{label}</span>
+                </div>
+                <div className="text-2xl font-bold">{value}</div>
+              </div>
+              <p className="text-xs opacity-70">{description}</p>
+            </div>
+          ))}
+        </div>
       </div>
-
       {/* Students Section with Tabs */}
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
@@ -408,14 +485,23 @@ export default function AdminDashboard() {
                           >
                             Review
                           </Button>
+                          <Button 
+                            variant="secondary" 
+                            onClick={() => handleViewDocuments(student.personal_data.email)}
+                          >
+                            <File className="mr-2 h-4 w-4" /> Documents
+                          </Button>
                           {currentStatus === 'unverified' && student.personal_data.status === 'unverified' && (
                             <Button 
                               variant="default" 
+                              disabled={isUpdatingStatus}
                               onClick={async () => {
                                 try {
+                                  setIsUpdatingStatus(true);
                                   await unauthenticatedApiClient.put(`deactivate_or_modify_personal-student-data/${student.fulldata_applicant_id}/False`, {
                                     "status": "pending"
                                   });
+                                  
                                   // Update local state
                                   setStudents(students.map(s => 
                                     s.fulldata_applicant_id === student.fulldata_applicant_id 
@@ -425,10 +511,20 @@ export default function AdminDashboard() {
                                   filterStudents(currentStatus);
                                 } catch (error) {
                                   console.error('Failed to update student status:', error);
+                                } finally {
+                                  setIsUpdatingStatus(false);
+                                  window.location.reload();
                                 }
                               }}
                             >
-                              Update Status
+                              {isUpdatingStatus ? (
+                                <div className="flex items-center">
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Updating...
+                                </div>
+                              ) : (
+                                "Update Status"
+                              )}
                             </Button>
                           )}
                         </div>
@@ -450,6 +546,53 @@ export default function AdminDashboard() {
           studentData={selectedStudent}
           onSave={handleSaveStudent}
         />
+      )}
+      {/* Student Documents Modal */}
+      {isDocumentsModalOpen && selectedStudentEmail && (
+        <StudentDocumentsModal 
+          isOpen={isDocumentsModalOpen}
+          onClose={() => setIsDocumentsModalOpen(false)}
+          email={selectedStudentEmail}
+        />
+      )}
+      {isUpdatingSave && (
+        <div className="fixed inset-0 bg-gradient-to-br from-blue-500/40 to-purple-600/40 backdrop-blur-sm flex items-center justify-center z-[100]">
+          <div className="bg-white/90 p-8 rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full">
+            <div className="flex flex-col items-center space-y-6">
+              {/* Animated Loading Spinner */}
+              <div className="relative w-24 h-24">
+                <div className="absolute inset-0 bg-blue-500/20 rounded-full animate-pulse"></div>
+                <div className="absolute inset-2 bg-blue-500/30 rounded-full animate-ping"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />
+                </div>
+              </div>
+
+              {/* Animated Text */}
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2 animate-pulse">
+                  Updating Student Data
+                </h3>
+                <p className="text-gray-600 text-sm animate-bounce">
+                  Please wait while we save your changes...
+                </p>
+              </div>
+
+              {/* Progress Indicator */}
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full animate-progress-pulse" 
+                  style={{width: '75%'}}
+                ></div>
+              </div>
+
+              {/* Optional Subtle Tip */}
+              <div className="text-xs text-gray-500 text-center">
+                Do not close or refresh the page
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

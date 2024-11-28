@@ -288,10 +288,21 @@ export default function StudentEditModal({
             </div>
             <div>
               <Label>Status</Label>
-              <Input 
+              <Select 
                 value={editedData.personal_data.status}
-                onChange={(e) => updateNestedState('personal_data', 'status', e.target.value)}
-              />
+                onValueChange={(value) => updateNestedState('personal_data', 'status', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="officially enrolled">Officially Enrolled</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="unverified">Unverified</SelectItem>
+                  <SelectItem value="initially enrolled">Initially Enrolled</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>ACR</Label>

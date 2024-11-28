@@ -108,10 +108,11 @@ export const SubjectEnlistment = () => {
 // Add this state at the beginning of your component
 const [isEnrolling, setIsEnrolling] = useState(false);
   const [showEnlistment, setShowEnlistment] = useState<boolean>(false);
-  const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
+  const formatTime = (timeString: string) => {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit', 
+      minute: '2-digit', 
       hour12: true
     });
   };

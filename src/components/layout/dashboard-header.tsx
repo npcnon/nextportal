@@ -87,13 +87,6 @@ export const DashboardHeader = () => {
       description: 'Access your academic information',
       requiresPersonalData: true
     },
-    {
-      name: 'Campus Life',
-      path: '/campus-life',
-      icon: <GraduationCap className="w-5 h-5 text-[#ff8a47]" />, 
-      description: 'Explore campus activities',
-      requiresPersonalData: true
-    },
   ];
 
   const filteredNavigationItems = navigationItems.filter(item => 
