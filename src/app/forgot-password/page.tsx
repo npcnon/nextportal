@@ -109,12 +109,33 @@ export default function PasswordResetRequestPage() {
       formData.append('message', values.message)
       
       if (values.files && values.files.length > 0) {
+        // Validate file count
+        if (values.files.length > 5) {
+          toast({
+            title: "Upload Limit Exceeded",
+            description: "You can upload a maximum of 5 files.",
+            variant: "destructive",
+          })
+          return
+        }
+  
+        // Validate file sizes
+        const largeFiles = values.files.filter(file => file.size > 10 * 1024 * 1024) // 10MB limit
+        if (largeFiles.length > 0) {
+          toast({
+            title: "File Size Limit Exceeded",
+            description: "Each file must be smaller than 10MB.",
+            variant: "destructive",
+          })
+          return
+        }
+  
         values.files.forEach((file) => {
           formData.append(`files`, file, file.name)
         })
       }
   
-      const response = await unauthenticatedApiClient.post('post-help/', formData, {
+      const response = await unauthenticatedApiClient.post('admin-contact/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -122,14 +143,60 @@ export default function PasswordResetRequestPage() {
   
       toast({
         title: "Success",
-        description: response.data.message
+        description: response.data.message || "Your message has been sent successfully.",
+        variant: "default",
       })
   
       adminContactForm.reset()
     } catch (error: any) {
+      // Comprehensive error handling
+      let errorTitle = "Error";
+      let errorDescription = "Failed to send message";
+  
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        switch (error.response.status) {
+          case 400:
+            errorTitle = "Invalid Request";
+            errorDescription = error.response.data.error || 
+              error.response.data.detail || 
+              "The request contains invalid data.";
+            break;
+          case 413:
+            errorTitle = "File Upload Error";
+            errorDescription = "The files are too large. Maximum file size is 10MB per file.";
+            break;
+          case 422:
+            errorTitle = "Validation Error";
+            errorDescription = error.response.data.error || 
+              "The submitted data did not pass validation checks.";
+            break;
+          case 500:
+            errorTitle = "Server Error";
+            errorDescription = "An internal server error occurred. Please try again later.";
+            break;
+          case 503:
+            errorTitle = "Service Unavailable";
+            errorDescription = "The service is currently unavailable. Please try again later.";
+            break;
+          default:
+            errorTitle = "Unexpected Error";
+            errorDescription = error.response.data.error || 
+              "An unexpected error occurred while processing your request.";
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        errorTitle = "Network Error";
+        errorDescription = "No response received from the server. Please check your internet connection.";
+      } else {
+        // Something happened in setting up the request
+        errorTitle = "Request Setup Error";
+        errorDescription = error.message || "An error occurred while preparing the request.";
+      }
+  
       toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to send message",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
       })
     } finally {

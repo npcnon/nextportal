@@ -1,5 +1,7 @@
 "use client"
 import React, { useState, useEffect } from 'react';
+
+import { MessageCircle } from 'lucide-react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -30,6 +32,7 @@ import StudentDocumentsModal from '@/components/admin/document-modal';
 import unauthenticatedApiClient from '@/lib/clients/unauthenticated-api-client';
 import apiClient from '@/lib/clients/authenticated-api-client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AdminContactModal from '@/components/admin/contact-modal';
 
 export default function AdminDashboard() {
   const [students, setStudents] = useState([]);
@@ -41,6 +44,9 @@ export default function AdminDashboard() {
   const [isUpdatingSave, setIsUpdatingSave] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [adminContacts, setAdminContacts] = useState([]);
+  const [selectedContact, setSelectedContact] = useState(null);
+  const [isAdminContactModalOpen, setIsAdminContactModalOpen] = useState(false);
   const [currentStatus, setCurrentStatus] = useState('All');
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -64,7 +70,20 @@ export default function AdminDashboard() {
     'initially enrolled': 'bg-purple-100 text-purple-800'
   };
 
-  
+  // Add a useEffect to fetch admin contacts
+useEffect(() => {
+  const fetchAdminContacts = async () => {
+    try {
+      const response = await unauthenticatedApiClient.get('admin-contacts/');
+      console.log(`admin contacts: ${JSON.stringify(response.data)}`)
+      setAdminContacts(response.data);
+    } catch (error) {
+      console.error('Failed to fetch admin contacts:', error);
+    }
+  };
+
+  fetchAdminContacts();
+}, []);
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -537,7 +556,65 @@ export default function AdminDashboard() {
           </Tabs>
         </CardContent>
       </Card>
+        {/* Admin Contacts Section */}
+<Card className="mt-8">
+  <CardHeader className="flex flex-row justify-between items-center">
+    <CardTitle>Admin Contact Requests</CardTitle>
+    <div className="flex items-center space-x-2">
+      <Mail className="h-4 w-4 text-gray-500" />
+      <span className="text-sm text-gray-600">
+        Total Requests: {adminContacts.length}
+      </span>
+    </div>
+  </CardHeader>
+  <CardContent>
+    {adminContacts.length === 0 ? (
+      <div className="text-center py-8 text-gray-500">
+        No admin contact requests at the moment
+      </div>
+    ) : (
+      <div className="space-y-4">
+        {adminContacts.map((contact) => (
+          <div 
+            key={contact.id} 
+            className="bg-gray-100 p-4 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
+            onClick={() => {
+              setSelectedContact(contact);
+              setIsAdminContactModalOpen(true);
+            }}
+          >
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-gray-800 line-clamp-2">
+                  {contact.message}
+                </p>
+                <div className="flex items-center space-x-2 mt-2">
+                  <span className="text-xs text-gray-500">
+                    {new Date(contact.created_at).toLocaleString()}
+                  </span>
+                  {contact.document_count > 0 && (
+                    <Badge>
+                      {contact.document_count} Attachment{contact.document_count !== 1 ? 's' : ''}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <MessageCircle className="h-5 w-5 text-gray-500" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </CardContent>
+</Card>
 
+{/* Admin Contact Modal */}
+{isAdminContactModalOpen && selectedContact && (
+  <AdminContactModal 
+    contact={selectedContact} 
+    onClose={() => setIsAdminContactModalOpen(false)} 
+  />
+)}  
       {/* Student Edit Modal remains the same */}
       {selectedStudent && (
         <StudentEditModal 
