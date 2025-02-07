@@ -24,7 +24,7 @@ import apiClient from '@/lib/clients/authenticated-api-client'
 import { motion } from 'framer-motion'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
 import unauthenticatedApiClient from '@/lib/clients/unauthenticated-api-client'
-
+import TermsAndPrivacyModal from '@/components/terms/terms-and-agreement'
 // Mock data for programs and campuses
 
 const CAMPUSES = [
@@ -95,7 +95,8 @@ export default function EnrollmentForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingPrograms, setIsLoadingPrograms] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
-
+  const [showTerms, setShowTerms] = useState(true)
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -117,8 +118,17 @@ export default function EnrollmentForm() {
     setIsNavigating(true)
     router.push(path)
   }
-
-
+  const handleTermsAccept = () => {
+    setHasAcceptedTerms(true)
+    setShowTerms(false)
+  }
+  const handleTermsClose = () => {
+    if (!hasAcceptedTerms) {
+      // Redirect to home page or another page if terms are declined
+      router.push('/')
+    }
+    setShowTerms(false)
+  }
 
   const handleEmailVerification = async () => {
     setIsVerifyingEmail(true)
@@ -1068,6 +1078,12 @@ const ConfirmationDialog = () => (
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 py-6 sm:py-12">
+      <TermsAndPrivacyModal
+        isOpen={showTerms}
+        onClose={handleTermsClose}
+        onAccept={handleTermsAccept}
+      />
+      
       {isNavigating && (
             <div className="fixed inset-0 z-50 bg-white/50 backdrop-blur-sm">
               <div className="absolute top-0 left-0 w-full h-1">

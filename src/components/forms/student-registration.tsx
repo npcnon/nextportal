@@ -31,7 +31,7 @@ import useDebounce from '@/hooks/use-debounce';
 import { NumberInput } from './number-input';
 import apiClient from '@/lib/clients/authenticated-api-client';
 import router from 'next/router';
-
+import TermsAndPrivacyModal from '../terms/terms-and-agreement';
 interface Program {
   id: number
   code: string

@@ -8,7 +8,7 @@ import { SubjectEnlistment } from '@/components/forms/subject-enlistment';
 import DocumentSubmission from '@/components/files/DocumentSubmission';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from '@/hooks/use-toast'
-
+import TermsAndPrivacyModal from '@/components/terms/terms-and-agreement';
 import {
   Dialog,
   DialogClose,
@@ -261,33 +261,68 @@ export default function StudentDashboard(): JSX.Element {
     </div>
   );
 }
-const StudentRegistrationDialog: React.FC<StudentRegistrationDialogProps> = ({ trigger }) => {
+const StudentRegistrationDialog = ({ trigger }) => {
+  const [showDialog, setShowDialog] = useState(false);
+  const [showTerms, setShowTerms] = useState(true);
+  
+  const handleOpenChange = (open) => {
+    if (!open) {
+      setShowDialog(false);
+      // Reset terms view for next time dialog is opened
+      setShowTerms(true);
+    } else {
+      setShowDialog(true);
+    }
+  };
+
+  const handleAcceptTerms = () => {
+    setShowTerms(false);
+  };
+
+  const handleCloseTerms = () => {
+    setShowDialog(false);
+    setShowTerms(true);
+  };
+
   return (
-    <Dialog>
+    <Dialog open={showDialog} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
       <DialogContent className="max-w-[95vw] sm:max-w-5xl h-[90vh] flex flex-col bg-gradient-to-br from-white to-indigo-50/30 border border-indigo-100 shadow-xl mx-2">
-        <DialogHeader className="bg-gradient-to-r from-[#1A2A5B] to-[#142247] text-white p-3 sm:p-4 rounded-t-lg mt-4 flex-shrink-0">
-          <DialogTitle className="text-xl sm:text-2xl font-bold tracking-tight">
-            Student Information
-          </DialogTitle>
-          <DialogDescription className="text-indigo-100 mt-2 text-sm sm:text-base">
-            Please complete all required fields in the registration form below to proceed with your enrollment.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative">
-          <StudentRegistrationForm />
-        </div>
-        <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-          <X className="h-4 w-4 text-white" />
-          <span className="sr-only">Close</span>
-        </DialogClose>
+        {showTerms ? (
+          <>
+            <DialogTitle className="sr-only">Terms and Privacy Policy</DialogTitle>
+            <TermsAndPrivacyModal 
+              isOpen={showTerms}
+              onClose={handleCloseTerms}
+              onAccept={handleAcceptTerms}
+            />
+          </>
+        ) : (
+          <>
+            <DialogHeader className="bg-gradient-to-r from-[#1A2A5B] to-[#142247] text-white p-3 sm:p-4 rounded-t-lg mt-4 flex-shrink-0">
+              <DialogTitle className="text-xl sm:text-2xl font-bold tracking-tight">
+                Student Information
+              </DialogTitle>
+              <p className="text-indigo-100 mt-2 text-sm sm:text-base">
+                Please complete all required fields in the registration form below to proceed with your enrollment.
+              </p>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative">
+              <StudentRegistrationForm />
+            </div>
+            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+              <X className="h-4 w-4 text-white" />
+              <span className="sr-only">Close</span>
+            </DialogClose>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
 };
-
 const TabContent: React.FC<TabContentProps> = ({ children, className }) => (
   <div className={`p-4 sm:p-8 rounded-xl ${className}`}>
     {children}
