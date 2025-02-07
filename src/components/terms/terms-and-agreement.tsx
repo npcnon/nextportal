@@ -10,9 +10,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { type CheckedState } from "@radix-ui/react-checkbox";
 
 export default function TermsAndPrivacyModal({ isOpen, onClose, onAccept }) {
   const [accepted, setAccepted] = useState(false);
+
+  const handleCheckedChange = (checked: CheckedState) => {
+    setAccepted(checked as boolean);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -84,7 +89,7 @@ export default function TermsAndPrivacyModal({ isOpen, onClose, onAccept }) {
             <Checkbox 
               id="terms" 
               checked={accepted}
-              onCheckedChange={(checked) => setAccepted(checked)}
+              onCheckedChange={handleCheckedChange}
             />
             <label
               htmlFor="terms"
